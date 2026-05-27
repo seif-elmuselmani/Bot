@@ -24,7 +24,9 @@ const OrderSchema = new mongoose.Schema(
       enum: {
         values: [
           'similarity_report',
+          'similarity_exclude_report',
           'ai_writing_report',
+          'both_reports',
           'cv_design',
           'portfolio_design',
           'pdf_to_word',

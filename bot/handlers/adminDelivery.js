@@ -182,10 +182,11 @@ const setupAdminDelivery = (bot) => {
       }
 
       const serviceLabel = order.serviceType.replace(/_/g, ' ').toUpperCase();
-      const isAiReduction = order.serviceType === 'ai_reduction';
+      const isMultiFile = order.serviceType === 'ai_reduction' || order.serviceType === 'both_reports';
 
-      if (isAiReduction) {
+      if (isMultiFile) {
         const isFirstFile = !order.deliveredFileId;
+        const serviceName = order.serviceType === 'both_reports' ? 'كلا التقريرين (تشابه + AI)' : 'تقليل نسبة الذكاء الاصطناعي';
         
         // Build the caption sent to the user
         let userCaption;
@@ -193,13 +194,13 @@ const setupAdminDelivery = (bot) => {
           userCaption =
             `📥 <b>تم استلام الملف الأول (1/2) لطلبك</b>\n\n` +
             `• <b>رقم الطلب:</b> <code>${orderId}</code>\n` +
-            `• <b>نوع الخدمة:</b> <code>تقليل نسبة الذكاء الاصطناعي</code>\n\n` +
-            `⏳ <i>جاري إرسال الملف الثاني المكمل من قبل الإدارة (ملف القياس/إعادة الصياغة)...</i>`;
+            `• <b>نوع الخدمة:</b> <code>${serviceName}</code>\n\n` +
+            `⏳ <i>جاري إرسال الملف الثاني المكمل من قبل الإدارة...</i>`;
         } else {
           userCaption =
             `✨ <b>تم استلام الملف الثاني (2/2) لطلبك</b> ✨\n\n` +
             `• <b>رقم الطلب:</b> <code>${orderId}</code>\n` +
-            `• <b>نوع الخدمة:</b> <code>تقليل نسبة الذكاء الاصطناعي</code>\n\n` +
+            `• <b>نوع الخدمة:</b> <code>${serviceName}</code>\n\n` +
             `✅ <b>تم تسليم كافة الملفات المطلوبة بنجاح!</b>`;
         }
 
@@ -227,7 +228,7 @@ const setupAdminDelivery = (bot) => {
           await order.save();
           return ctx.replyWithHTML(
             `✅ <b>تم إرسال الملف الأول (1/2) للعميل بنجاح!</b>\n\n` +
-            `يرجى الرد على نفس الرسالة بالملف الثاني (ملف القياس أو ملف إعادة الصياغة الآخر) لإغلاق الطلب.`
+            `يرجى الرد على نفس الرسالة بالملف الثاني المكمل لإغلاق الطلب.`
           );
         } else {
           order.status = 'completed';
@@ -334,10 +335,11 @@ const setupAdminDelivery = (bot) => {
       }
 
       const serviceLabel = order.serviceType.replace(/_/g, ' ').toUpperCase();
-      const isAiReduction = order.serviceType === 'ai_reduction';
+      const isMultiFile = order.serviceType === 'ai_reduction' || order.serviceType === 'both_reports';
 
-      if (isAiReduction) {
+      if (isMultiFile) {
         const isFirstFile = !order.deliveredFileId;
+        const serviceName = order.serviceType === 'both_reports' ? 'كلا التقريرين (تشابه + AI)' : 'تقليل نسبة الذكاء الاصطناعي';
 
         // Build the caption sent to the user
         let userCaption;
@@ -345,13 +347,13 @@ const setupAdminDelivery = (bot) => {
           userCaption =
             `📥 <b>تم استلام الملف الأول (1/2) لطلبك (صورة)</b>\n\n` +
             `• <b>رقم الطلب:</b> <code>${orderId}</code>\n` +
-            `• <b>نوع الخدمة:</b> <code>تقليل نسبة الذكاء الاصطناعي</code>\n\n` +
-            `⏳ <i>جاري إرسال الملف الثاني المكمل من قبل الإدارة (ملف القياس/إعادة الصياغة)...</i>`;
+            `• <b>نوع الخدمة:</b> <code>${serviceName}</code>\n\n` +
+            `⏳ <i>جاري إرسال الملف الثاني المكمل من قبل الإدارة...</i>`;
         } else {
           userCaption =
             `✨ <b>تم استلام الملف الثاني (2/2) لطلبك (صورة)</b> ✨\n\n` +
             `• <b>رقم الطلب:</b> <code>${orderId}</code>\n` +
-            `• <b>نوع الخدمة:</b> <code>تقليل نسبة الذكاء الاصطناعي</code>\n\n` +
+            `• <b>نوع الخدمة:</b> <code>${serviceName}</code>\n\n` +
             `✅ <b>تم تسليم كافة الملفات المطلوبة بنجاح!</b>`;
         }
 
@@ -379,7 +381,7 @@ const setupAdminDelivery = (bot) => {
           await order.save();
           return ctx.replyWithHTML(
             `✅ <b>تم إرسال الملف الأول (1/2) للعميل بنجاح (صورة)!</b>\n\n` +
-            `يرجى الرد على نفس الرسالة بالملف الثاني (ملف القياس أو ملف إعادة الصياغة الآخر) لإغلاق الطلب.`
+            `يرجى الرد على نفس الرسالة بالملف الثاني المكمل لإغلاق الطلب.`
           );
         } else {
           order.status = 'completed';
