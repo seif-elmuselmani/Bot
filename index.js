@@ -543,7 +543,7 @@ const handleExport = async (ctx) => {
   try {
     const statusMsg = await ctx.reply('⏳ جاري تجميع البيانات وتوليد التقرير...');
 
-    // Run Aggregation to join Users with their Deposits (to get latest phone number) and Orders (to get counts)
+    // Run Aggregation to join Users with their Deposits (to get latest phone number) and Orders (to get counts and financial stats)
     const reportData = await User.aggregate([
       {
         $lookup: {
@@ -578,7 +578,39 @@ const handleExport = async (ctx) => {
               in: { $ifNull: ["$$lastDeposit.senderPhone", "N/A"] }
             }
           },
-          // Service counts based on serviceType
+          // Total points approved recharged
+          totalRecharged: {
+            $sum: {
+              $map: {
+                input: {
+                  $filter: {
+                    input: "$userDeposits",
+                    as: "d",
+                    cond: { $eq: ["$$d.status", "approved"] }
+                  }
+                },
+                as: "d",
+                in: "$$d.amount"
+              }
+            }
+          },
+          // Total points spent (all orders not cancelled)
+          totalSpent: {
+            $sum: {
+              $map: {
+                input: {
+                  $filter: {
+                    input: "$userOrders",
+                    as: "o",
+                    cond: { $ne: ["$$o.status", "cancelled"] }
+                  }
+                },
+                as: "o",
+                in: "$$o.price"
+              }
+            }
+          },
+          // Counts per service type
           cvCount: {
             $size: {
               $filter: {
@@ -606,23 +638,65 @@ const handleExport = async (ctx) => {
               }
             }
           },
+          aiCount: {
+            $size: {
+              $filter: {
+                input: "$userOrders",
+                as: "o",
+                cond: { $eq: ["$$o.serviceType", "ai_writing_report"] }
+              }
+            }
+          },
+          pdfCount: {
+            $size: {
+              $filter: {
+                input: "$userOrders",
+                as: "o",
+                cond: { $eq: ["$$o.serviceType", "pdf_to_word"] }
+              }
+            }
+          },
+          translationCount: {
+            $size: {
+              $filter: {
+                input: "$userOrders",
+                as: "o",
+                cond: { $eq: ["$$o.serviceType", "translation"] }
+              }
+            }
+          },
+          pendingRechargesCount: {
+            $size: {
+              $filter: {
+                input: "$userDeposits",
+                as: "d",
+                cond: { $eq: ["$$d.status", "pending"] }
+              }
+            }
+          },
           totalOrders: { $size: "$userOrders" }
         }
       }
     ]);
 
-    // Generate CSV
+    // Generate CSV (Localized Column Headers for perfect Arabic Excel compatibility)
     const headers = [
-      'Telegram ID',
-      'Username',
-      'Full Name',
-      'Phone',
-      'Balance (Points)',
-      'CV Design Orders',
-      'Similarity Orders',
-      'Portfolio Orders',
-      'Total Orders',
-      'Joined At'
+      'معرّف تليجرام (Telegram ID)',
+      'اسم المستخدم (Username)',
+      'الاسم بالكامل (Full Name)',
+      'رقم الهاتف (Phone)',
+      'الرصيد الحالي للمحفظة (Current Balance)',
+      'إجمالي الرصيد المشحون (Total Recharged)',
+      'إجمالي الرصيد المستهلك (Total Spent)',
+      'طلبات السيرة الذاتية (CV Design)',
+      'طلبات فحص التشابه (Similarity)',
+      'طلبات البورتفوليو (Portfolio)',
+      'طلبات تقارير الذكاء الاصطناعي (AI Report)',
+      'طلبات تحويل PDF لوورد (PDF to Word)',
+      'طلبات الترجمة (Translation)',
+      'إجمالي طلبات العميل (Total Orders)',
+      'طلبات شحن معلقة (Pending Recharges)',
+      'تاريخ الانضمام (Joined At)'
     ];
 
     const escapeField = (val) => {
@@ -632,6 +706,13 @@ const handleExport = async (ctx) => {
         return `"${str}"`;
       }
       return str;
+    };
+
+    const formatDate = (date) => {
+      if (!date) return 'N/A';
+      const d = new Date(date);
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
     };
 
     const rows = reportData.map(item => {
@@ -644,11 +725,17 @@ const handleExport = async (ctx) => {
         escapeField(fullName),
         escapeField(item.phone),
         item.balance,
+        item.totalRecharged,
+        item.totalSpent,
         item.cvCount,
         item.similarityCount,
         item.portfolioCount,
+        item.aiCount,
+        item.pdfCount,
+        item.translationCount,
         item.totalOrders,
-        escapeField(item.joinedAt ? item.joinedAt.toISOString() : '')
+        item.pendingRechargesCount,
+        escapeField(formatDate(item.joinedAt))
       ].join(',');
     });
 
