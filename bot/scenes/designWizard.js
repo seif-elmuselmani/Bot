@@ -134,8 +134,7 @@ const designWizard = new WizardScene(
     );
     return ctx.wizard.next();
   },
-
-  // Step 3: Capture instructions, deduct points, log order, and forward to admin group
+  // Step 3: Capture instructions, prompt confirmation
   async (ctx, next) => {
     if (await checkCancelOrCommand(ctx, next)) return;
 
@@ -159,6 +158,66 @@ const designWizard = new WizardScene(
       notes = 'بدون ملاحظات إضافية';
     }
 
+    ctx.wizard.state.notes = notes;
+
+    const price = ctx.session.selectedPrice;
+    const serviceName = ctx.session.selectedServiceName;
+    const userId = ctx.from.id.toString();
+
+    try {
+      // Verify user points before confirmation
+      const user = await User.findOne({ telegramId: userId });
+      if (!user || user.balance < price) {
+        await ctx.reply(`❌ رصيدك الحالي غير كافٍ لإتمام هذا الطلب (سعر الخدمة: ${price} نقطة، رصيدك: ${user ? user.balance : 0} نقطة). يرجى شحن محفظتك عبر /recharge أولاً.`);
+        return ctx.scene.leave();
+      }
+
+      await ctx.replyWithHTML(
+        `📋 <b>تأكيد طلب التصميم</b>\n\n` +
+        `• <b>الخدمة المطلوبة:</b> <code>${escapeHTML(serviceName)}</code>\n` +
+        `• <b>التعليمات والملاحظات:</b> <i>${escapeHTML(notes)}</i>\n` +
+        `• <b>التكلفة:</b> <b>${price} نقطة</b>\n` +
+        `• <b>رصيدك الحالي:</b> <code>${user.balance} نقطة</code>\n\n` +
+        `هل تريد تأكيد تقديم طلب التصميم وخصم النقاط الآن؟`,
+        {
+          reply_markup: {
+            keyboard: [
+              [{ text: '✅ تأكيد وتقديم الطلب' }],
+              [{ text: '❌ إلغاء الطلب' }]
+            ],
+            resize_keyboard: true,
+            one_time_keyboard: true
+          }
+        }
+      );
+      return ctx.wizard.next();
+
+    } catch (error) {
+      console.error('Design Wizard Step 3 Error:', error);
+      await ctx.reply('⚠️ حدث خطأ في النظام. يرجى المحاولة مرة أخرى.');
+      return ctx.scene.leave();
+    }
+  },
+
+  // Step 4: Handle confirmation, deduct points, log order, and forward to admin group
+  async (ctx, next) => {
+    if (await checkCancelOrCommand(ctx, next)) return;
+
+    const text = ctx.message?.text?.trim();
+    if (text !== '✅ تأكيد وتقديم الطلب') {
+      await ctx.reply('❌ يرجى استخدام الأزرار بالأسفل لتأكيد تقديم الطلب أو إلغائه:', {
+        reply_markup: {
+          keyboard: [
+            [{ text: '✅ تأكيد وتقديم الطلب' }],
+            [{ text: '❌ إلغاء الطلب' }]
+          ],
+          resize_keyboard: true,
+          one_time_keyboard: true
+        }
+      });
+      return; // Do not advance
+    }
+
     const userId = ctx.from.id.toString();
     const username = ctx.from.username || '';
     const firstName = ctx.from.first_name || '';
@@ -167,6 +226,7 @@ const designWizard = new WizardScene(
     const price = ctx.session.selectedPrice;
     const serviceName = ctx.session.selectedServiceName;
     const referenceFileId = ctx.wizard.state.referenceFileId;
+    const notes = ctx.wizard.state.notes;
 
     try {
       // 1. Fetch user to verify points

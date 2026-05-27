@@ -109,15 +109,24 @@ const rechargeWizard = new WizardScene(
       }
     );
     return ctx.wizard.next();
-  },
-
-  // Step 3: Validate receipt photo and prompt for sender's phone number
+  },  // Step 3: Validate receipt photo or document, and prompt for sender's phone number
   async (ctx, next) => {
     if (await checkCancelOrCommand(ctx, next)) return;
 
     const photo = ctx.message?.photo;
-    if (!photo || photo.length === 0) {
-      await ctx.reply('❌ يجب أن يكون الإيصال صورة مرفوعة. من فضلك ارفع صورة أو لقطة شاشة لعملية الدفع:', {
+    const document = ctx.message?.document;
+    let receiptFileId = null;
+    let isPhoto = true;
+
+    if (photo && photo.length > 0) {
+      receiptFileId = photo[photo.length - 1].file_id;
+    } else if (document) {
+      receiptFileId = document.file_id;
+      isPhoto = false;
+    }
+
+    if (!receiptFileId) {
+      await ctx.reply('❌ يجب أن يكون الإيصال صورة مرفوعة أو ملف مستند. من فضلك ارفع لقطة شاشة أو ملف الإيصال الخاص بعملية الدفع:', {
         reply_markup: {
           keyboard: [
             [{ text: '❌ إلغاء العملية' }]
@@ -126,12 +135,11 @@ const rechargeWizard = new WizardScene(
           one_time_keyboard: true
         }
       });
-      return; // Do not advance; wait for photo
+      return; // Do not advance
     }
 
-    // Get the highest resolution photo version
-    const receiptFileId = photo[photo.length - 1].file_id;
     ctx.wizard.state.receiptFileId = receiptFileId;
+    ctx.wizard.state.isPhoto = isPhoto;
 
     await ctx.replyWithHTML(
       '📱 <b>رقم الهاتف المحول منه</b>\n\n' +
@@ -173,6 +181,7 @@ const rechargeWizard = new WizardScene(
     const phone = text;
     const amount = ctx.wizard.state.amount;
     const receiptFileId = ctx.wizard.state.receiptFileId;
+    const isPhoto = ctx.wizard.state.isPhoto !== false;
     const userId = ctx.from.id.toString();
     const username = ctx.from.username || '';
     const firstName = ctx.from.first_name || '';
@@ -208,19 +217,28 @@ const rechargeWizard = new WizardScene(
         `• <b>رقم المحول:</b> <code>${escapeHTML(phone)}</code>\n\n` +
         `يرجى مراجعة إيصال الدفع المرفق واتخاذ الإجراء الملائم:`;
 
-      await ctx.telegram.sendPhoto(adminGroupId, receiptFileId, {
-        caption: adminCaption,
-        parse_mode: 'HTML',
-        reply_markup: {
-          inline_keyboard: [
-            [
-              { text: '✅ موافقة', callback_data: `approve_deposit_${userId}_${amount}` },
-              { text: '❌ رفض', callback_data: `reject_deposit_${userId}` }
-            ]
+      const keyboardMarkup = {
+        inline_keyboard: [
+          [
+            { text: '✅ موافقة', callback_data: `approve_deposit_${userId}_${amount}` },
+            { text: '❌ رفض', callback_data: `reject_deposit_${userId}` }
           ]
-        }
-      });
+        ]
+      };
 
+      if (isPhoto) {
+        await ctx.telegram.sendPhoto(adminGroupId, receiptFileId, {
+          caption: adminCaption,
+          parse_mode: 'HTML',
+          reply_markup: keyboardMarkup
+        });
+      } else {
+        await ctx.telegram.sendDocument(adminGroupId, receiptFileId, {
+          caption: adminCaption,
+          parse_mode: 'HTML',
+          reply_markup: keyboardMarkup
+        });
+      }
       // 4. Acknowledge user and close wizard with main menu keyboard
       await ctx.replyWithHTML(
         `✅ <b>تم إرسال الطلب بنجاح!</b>\n\n` +

@@ -15,6 +15,7 @@ const PromoCode = require('./models/PromoCode');
 const Session = require('./models/Session');
 const Deposit = require('./models/Deposit');
 const Order = require('./models/Order');
+const SystemConfig = require('./models/SystemConfig');
 
 // Load Scenes
 const rechargeWizard = require('./bot/scenes/rechargeWizard');
@@ -117,6 +118,51 @@ bot.use(async (ctx, next) => {
       console.error(`Failed to leave unauthorized group ${ctx.chat.id}:`, leaveErr.message);
     }
     return; // Drop the update - do not process anything
+  }
+
+  return next();
+});
+
+// Helper to check if a user is an admin (checks membership in the admin group)
+const isUserAdmin = async (ctx, userId) => {
+  const adminGroupId = process.env.ADMIN_GROUP_ID;
+  if (!adminGroupId) return false;
+  try {
+    const member = await ctx.telegram.getChatMember(adminGroupId, userId);
+    return ['creator', 'administrator'].includes(member.status);
+  } catch (err) {
+    return false;
+  }
+};
+
+// Maintenance Mode Middleware (blocks non-admin users when maintenance mode is active)
+bot.use(async (ctx, next) => {
+  if (!ctx.from) return next();
+  const adminGroupId = process.env.ADMIN_GROUP_ID;
+
+  // If update originates from the Admin Group itself, allow it directly
+  if (ctx.chat && adminGroupId && ctx.chat.id.toString() === adminGroupId.toString()) {
+    return next();
+  }
+
+  try {
+    const maintenanceSetting = await SystemConfig.findOne({ key: 'maintenanceMode' });
+    const isMaintenance = maintenanceSetting ? !!maintenanceSetting.value : false;
+
+    if (isMaintenance) {
+      const isAdmin = await isUserAdmin(ctx, ctx.from.id);
+      if (!isAdmin) {
+        if (ctx.callbackQuery) {
+          return ctx.answerCbQuery('⚠️ البوت في وضع الصيانة حالياً للتحديث. يرجى الانتظار.', { show_alert: true });
+        }
+        return ctx.replyWithHTML(
+          `⚠️ <b>البوت في وضع الصيانة حالياً</b>\n\n` +
+          `نعمل على بعض التحديثات والتحسينات السريعة للبوت. سنعود للعمل قريباً جداً! شكراً لتفهمك. 🙏`
+        );
+      }
+    }
+  } catch (err) {
+    console.error('Maintenance middleware error:', err);
   }
 
   return next();
@@ -630,6 +676,234 @@ const handleExport = async (ctx) => {
 bot.command('export', handleExport);
 bot.command('export_data', handleExport);
 
+// Admin Command: /maintenance or /togglemaintenance
+const handleMaintenance = async (ctx) => {
+  const isAdmin = await checkAdmin(ctx);
+  if (!isAdmin) return; // Silent ignore
+
+  const text = ctx.message?.text?.trim() || '';
+  const args = text.split(/\s+/);
+  
+  let targetState = null;
+  if (args.length >= 2) {
+    const arg = args[1].toLowerCase();
+    if (arg === 'on' || arg === 'true' || arg === 'نشط' || arg === 'تفعيل') targetState = true;
+    else if (arg === 'off' || arg === 'false' || arg === 'معطل' || arg === 'إيقاف') targetState = false;
+  }
+
+  try {
+    let isMaintenance = false;
+    if (targetState !== null) {
+      await SystemConfig.findOneAndUpdate(
+        { key: 'maintenanceMode' },
+        { value: targetState },
+        { upsert: true, new: true }
+      );
+      isMaintenance = targetState;
+    } else {
+      // Toggle if no state specified
+      const current = await SystemConfig.findOne({ key: 'maintenanceMode' });
+      const newState = current ? !current.value : true;
+      await SystemConfig.findOneAndUpdate(
+        { key: 'maintenanceMode' },
+        { value: newState },
+        { upsert: true, new: true }
+      );
+      isMaintenance = newState;
+    }
+
+    const stateText = isMaintenance ? '🟢 نشط (وضع الصيانة مفعل)' : '🔴 معطل (وضع الصيانة مغلق - البوت متاح للجميع)';
+    await ctx.replyWithHTML(
+      `⚙️ <b>تحديث وضع صيانة البوت</b>\n\n` +
+      `• <b>الحالة الحالية:</b> ${stateText}\n\n` +
+      `<i>ملاحظة: عند تفعيل وضع الصيانة، يتم حظر كافة المستخدمين العاديين من المحادثة الخاصة مع البوت، مع إبقائه متاحاً فقط للمشرفين.</i>`
+    );
+  } catch (error) {
+    console.error('Maintenance toggle error:', error);
+    await ctx.reply('⚠️ حدث خطأ أثناء تحديث وضع الصيانة في قاعدة البيانات.');
+  }
+};
+
+bot.command('maintenance', handleMaintenance);
+bot.command('togglemaintenance', handleMaintenance);
+
+// Admin Command: /refund <orderId>
+bot.command('refund', async (ctx) => {
+  const isAdmin = await checkAdmin(ctx);
+  if (!isAdmin) return; // Silent ignore
+
+  const text = ctx.message?.text?.trim() || '';
+  const args = text.split(/\s+/);
+  if (args.length < 2) {
+    return ctx.reply('⚠️ طريقة الاستخدام: /refund <رقم_الطلب>');
+  }
+
+  const orderId = args[1].toUpperCase();
+
+  try {
+    const order = await Order.findOne({ orderId });
+    if (!order) {
+      return ctx.reply(`❌ خطأ: لم يتم العثور على الطلب رقم "${orderId}" في قاعدة البيانات.`);
+    }
+
+    if (order.status === 'cancelled') {
+      return ctx.reply(`ℹ️ الطلب رقم "${orderId}" ملغي ومسترد بالفعل مسبقاً.`);
+    }
+
+    const refundAmount = order.price;
+    const userId = order.telegramId;
+
+    // 1. Return points to user balance
+    const user = await User.findOneAndUpdate(
+      { telegramId: userId },
+      { $inc: { balance: refundAmount } },
+      { new: true }
+    );
+
+    if (!user) {
+      return ctx.reply(`❌ خطأ: لم يتم العثور على صاحب الطلب في قاعدة البيانات لرد النقاط.`);
+    }
+
+    // 2. Mark order as cancelled
+    order.status = 'cancelled';
+    await order.save();
+
+    // 3. Notify user in private chat
+    try {
+      await ctx.telegram.sendMessage(
+        userId,
+        `⚠️ <b>تم إلغاء طلبك واسترداد نقاطك</b>\n\n` +
+        `• <b>رقم الطلب:</b> <code>${orderId}</code>\n` +
+        `• <b>النقاط المستردة:</b> <code>+${refundAmount} نقطة</code>\n` +
+        `• <b>رصيدك الحالي:</b> <code>${user.balance} نقطة</code>\n\n` +
+        `تم إلغاء الطلب من قبل الإدارة وإعادة النقاط إلى محفظتك بالكامل. يمكنك تقديم طلب جديد الآن.`,
+        { parse_mode: 'HTML' }
+      );
+    } catch (notifyErr) {
+      console.error(`Failed to notify user ${userId} of refund:`, notifyErr.message);
+    }
+
+    // 4. Confirm to Admin Group
+    await ctx.replyWithHTML(
+      `💸 <b>تم إلغاء الطلب ورد النقاط بنجاح!</b>\n\n` +
+      `• <b>رقم الطلب:</b> <code>${orderId}</code>\n` +
+      `• <b>المستلم (ID):</b> <code>${userId}</code> (الاسم: ${escapeHTML(user.firstName || 'غير محدد')})\n` +
+      `• <b>النقاط المستردة:</b> <code>+${refundAmount} نقطة</code>\n` +
+      `• <b>الرصيد الجديد للعميل:</b> <code>${user.balance} نقطة</code>`
+    );
+
+  } catch (error) {
+    console.error('Refund command error:', error);
+    await ctx.reply('⚠️ حدث خطأ في النظام أثناء عملية استرداد النقاط.');
+  }
+});
+
+// Admin Command: /setbalance <telegramId_or_@username> <amount>
+bot.command('setbalance', async (ctx) => {
+  const isAdmin = await checkAdmin(ctx);
+  if (!isAdmin) return; // Silent ignore
+
+  const text = ctx.message?.text?.trim() || '';
+  const args = text.split(/\s+/);
+  if (args.length < 3) {
+    return ctx.reply('⚠️ طريقة الاستخدام: /setbalance <telegramId_أو_@اسم_المستخدم> <الرصيد_الجديد>');
+  }
+
+  const targetInput = args[1];
+  const newBalance = parseFloat(args[2]);
+
+  if (isNaN(newBalance) || newBalance < 0) {
+    return ctx.reply('❌ خطأ: يرجى إدخال قيمة رصيد صحيحة وغير سالبة.');
+  }
+
+  let query = {};
+  if (/^\d+$/.test(targetInput)) {
+    query = { telegramId: targetInput };
+  } else {
+    const cleanUsername = targetInput.replace(/^@/, '');
+    query = { username: new RegExp(`^${cleanUsername}$`, 'i') };
+  }
+
+  try {
+    const user = await User.findOne(query);
+    if (!user) {
+      return ctx.reply(`❌ لم يتم العثور على مستخدم بالبيانات "${targetInput}" في قاعدة البيانات.`);
+    }
+
+    const oldBalance = user.balance;
+    user.balance = newBalance;
+    await user.save();
+
+    // Notify user of balance override
+    try {
+      await ctx.telegram.sendMessage(
+        user.telegramId,
+        `💳 <b>تعديل رصيد محفظتك</b>\n\n` +
+        `قامت الإدارة بتحديث رصيدك بشكل مباشر:\n` +
+        `• <b>الرصيد السابق:</b> <code>${oldBalance} نقطة</code>\n` +
+        `• <b>الرصيد الجديد:</b> <code>${newBalance} نقطة</code>`,
+        { parse_mode: 'HTML' }
+      );
+    } catch (notifyErr) {
+      console.error(`Failed to notify user ${user.telegramId} of balance override:`, notifyErr.message);
+    }
+
+    // Confirm to Admin Group
+    await ctx.replyWithHTML(
+      `👤 <b>تم تعديل رصيد المحفظة مباشرة!</b>\n\n` +
+      `• <b>العميل:</b> ${escapeHTML(user.firstName || 'غير محدد')} (<code>${user.telegramId}</code>)\n` +
+      `• <b>الرصيد السابق:</b> <code>${oldBalance} نقطة</code>\n` +
+      `• <b>الرصيد الجديد:</b> <code>${newBalance} نقطة</code>`
+    );
+
+  } catch (error) {
+    console.error('Setbalance command error:', error);
+    await ctx.reply('⚠️ حدث خطأ في قاعدة البيانات أثناء تحديث الرصيد.');
+  }
+});
+
+// Admin Command: /pending
+bot.command('pending', async (ctx) => {
+  const isAdmin = await checkAdmin(ctx);
+  if (!isAdmin) return; // Silent ignore
+
+  try {
+    const pendingDeposits = await Deposit.find({ status: 'pending' }).sort({ createdAt: 1 });
+    const pendingOrders = await Order.find({ status: 'in_progress' }).sort({ createdAt: 1 });
+
+    let message = `📥 <b>قائمة العمليات المعلقة الحالية</b>\n\n`;
+
+    // 1. Wallet Recharge section
+    message += `<b>💳 طلبات شحن المحفظة المعلقة (${pendingDeposits.length}):</b>\n`;
+    if (pendingDeposits.length === 0) {
+      message += `• لا يوجد طلبات شحن معلقة حالياً.\n`;
+    } else {
+      pendingDeposits.forEach((dep, idx) => {
+        message += `${idx + 1}. ID: <code>${dep.depositId}</code> | العميل: <code>${dep.telegramId}</code> | المبلغ: <b>${dep.amount} نقطة</b> | رقم المحول: <code>${dep.senderPhone}</code>\n`;
+      });
+    }
+
+    message += `\n`;
+
+    // 2. Services section
+    message += `<b>📂 طلبات الخدمات الجاري تنفيذها (${pendingOrders.length}):</b>\n`;
+    if (pendingOrders.length === 0) {
+      message += `• لا يوجد طلبات خدمات قيد التنفيذ حالياً.\n`;
+    } else {
+      pendingOrders.forEach((ord, idx) => {
+        const serviceLabel = ord.serviceType.replace(/_/g, ' ').toUpperCase();
+        message += `${idx + 1}. ID: <code>${ord.orderId}</code> | العميل: <code>${ord.telegramId}</code> | الخدمة: <code>${serviceLabel}</code> | التكلفة: <b>${ord.price} نقطة</b>\n`;
+      });
+    }
+
+    await ctx.replyWithHTML(message);
+
+  } catch (error) {
+    console.error('Pending command error:', error);
+    await ctx.reply('⚠️ حدث خطأ أثناء جلب العمليات المعلقة.');
+  }
+});
+
 // Admin Command: /userinfo <telegramId_or_@username>
 bot.command('userinfo', async (ctx) => {
   const isAdmin = await checkAdmin(ctx);
@@ -728,18 +1002,22 @@ bot.command('adminhelp', async (ctx) => {
     `📊 <b>الإحصائيات والتقارير:</b>\n` +
     `• /stats — عرض إحصائيات البوت والأرباح اليومية والكلية.\n` +
     `• /export — تصدير تقرير إكسل (CSV) للمستخدمين والمبيعات.\n` +
+    `• /pending — عرض طلبات الشحن والخدمات المعلقة حالياً.\n` +
     `• /userinfo &lt;telegramId_أو_@اسم_المستخدم&gt; — عرض بيانات شحن مستخدم وتفاصيل حسابه.\n\n` +
     `🎟️ <b>إدارة الأكواد الترويجية:</b>\n` +
     `• /addpromo &lt;الكود&gt; &lt;النقاط&gt; &lt;أقصى_استخدامات&gt; — إنشاء كود هدية جديد.\n` +
     `• /promos — عرض جميع الأكواد الترويجية النشطة وحالة استخدامها.\n\n` +
     `💰 <b>إدارة رصيد المستخدمين:</b>\n` +
-    `• /addpoints &lt;telegramId_أو_@اسم_المستخدم&gt; &lt;النقاط&gt; — إضافة أو استرداد نقاط.\n` +
-    `  مثال: <code>/addpoints @user 150</code> (إضافة) | <code>/addpoints @user -50</code> (خصم)\n\n` +
+    `• /addpoints &lt;telegramId_أو_@اسم_المستخدم&gt; &lt;النقاط&gt; — إضافة أو خصم نقاط.\n` +
+    `• /setbalance &lt;telegramId_أو_@اسم_المستخدم&gt; &lt;النقاط&gt; — تعيين الرصيد مباشرة.\n` +
+    `• /refund &lt;رقم_الطلب&gt; — إلغاء الطلب ورد النقاط بالكامل للمحفظة.\n\n` +
     `🚫 <b>إدارة الحظر (المستخدمين):</b>\n` +
     `• /ban &lt;telegramId_أو_@اسم_المستخدم&gt; — حظر مستخدم من البوت.\n` +
     `• /unban &lt;telegramId_أو_@اسم_المستخدم&gt; — إلغاء حظر مستخدم.\n\n` +
     `📢 <b>البث الجماعي:</b>\n` +
     `• /broadcast &lt;نص_الرسالة&gt; — إرسال رسالة جماعية لكل المشتركين النشطين.\n\n` +
+    `⚙️ <b>وضع الصيانة:</b>\n` +
+    `• /maintenance &lt;on/off&gt; — تفعيل أو إيقاف وضع صيانة البوت (طوارئ).\n\n` +
     `🛠️ <b>لوحة التحكم السريعة:</b>\n` +
     `• /admin — عرض لوحة التحكم السريعة (أزرار الاختصار) داخل الجروب.`;
 
@@ -809,15 +1087,22 @@ bot.hears('🛠️ مساعدة المسؤول', async (ctx) => {
     `📊 <b>الإحصائيات والتقارير:</b>\n` +
     `• /stats — عرض إحصائيات البوت والأرباح اليومية والكلية.\n` +
     `• /export — تصدير تقرير إكسل (CSV) للمستخدمين والمبيعات.\n` +
+    `• /pending — عرض طلبات الشحن والخدمات المعلقة حالياً.\n` +
     `• /userinfo &lt;telegramId_أو_@اسم_المستخدم&gt; — عرض بيانات شحن مستخدم وتفاصيل حسابه.\n\n` +
     `🎟️ <b>إدارة الأكواد الترويجية:</b>\n` +
     `• /addpromo &lt;الكود&gt; &lt;النقاط&gt; &lt;أقصى_استخدامات&gt; — إنشاء كود هدية جديد.\n` +
     `• /promos — عرض جميع الأكواد الترويجية النشطة وحالة استخدامها.\n\n` +
+    `💰 <b>إدارة رصيد المستخدمين:</b>\n` +
+    `• /addpoints &lt;telegramId_أو_@اسم_المستخدم&gt; &lt;النقاط&gt; — إضافة أو خصم نقاط.\n` +
+    `• /setbalance &lt;telegramId_أو_@اسم_المستخدم&gt; &lt;النقاط&gt; — تعيين الرصيد مباشرة.\n` +
+    `• /refund &lt;رقم_الطلب&gt; — إلغاء الطلب ورد النقاط بالكامل للمحفظة.\n\n` +
     `🚫 <b>إدارة الحظر (المستخدمين):</b>\n` +
     `• /ban &lt;telegramId_أو_@اسم_المستخدم&gt; — حظر مستخدم من البوت.\n` +
     `• /unban &lt;telegramId_أو_@اسم_المستخدم&gt; — إلغاء حظر مستخدم.\n\n` +
     `📢 <b>البث الجماعي:</b>\n` +
     `• /broadcast &lt;نص_الرسالة&gt; — إرسال رسالة جماعية لكل المشتركين النشطين.\n\n` +
+    `⚙️ <b>وضع الصيانة:</b>\n` +
+    `• /maintenance &lt;on/off&gt; — تفعيل أو إيقاف وضع صيانة البوت (طوارئ).\n\n` +
     `🛠️ <b>لوحة التحكم السريعة:</b>\n` +
     `• /admin — عرض لوحة التحكم السريعة (أزرار الاختصار) داخل الجروب.`;
 
