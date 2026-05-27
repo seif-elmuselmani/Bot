@@ -182,6 +182,64 @@ const setupAdminDelivery = (bot) => {
       }
 
       const serviceLabel = order.serviceType.replace(/_/g, ' ').toUpperCase();
+      const isAiReduction = order.serviceType === 'ai_reduction';
+
+      if (isAiReduction) {
+        const isFirstFile = !order.deliveredFileId;
+        
+        // Build the caption sent to the user
+        let userCaption;
+        if (isFirstFile) {
+          userCaption =
+            `📥 <b>تم استلام الملف الأول (1/2) لطلبك</b>\n\n` +
+            `• <b>رقم الطلب:</b> <code>${orderId}</code>\n` +
+            `• <b>نوع الخدمة:</b> <code>تقليل نسبة الذكاء الاصطناعي</code>\n\n` +
+            `⏳ <i>جاري إرسال الملف الثاني المكمل من قبل الإدارة (ملف القياس/إعادة الصياغة)...</i>`;
+        } else {
+          userCaption =
+            `✨ <b>تم استلام الملف الثاني (2/2) لطلبك</b> ✨\n\n` +
+            `• <b>رقم الطلب:</b> <code>${orderId}</code>\n` +
+            `• <b>نوع الخدمة:</b> <code>تقليل نسبة الذكاء الاصطناعي</code>\n\n` +
+            `✅ <b>تم تسليم كافة الملفات المطلوبة بنجاح!</b>`;
+        }
+
+        if (adminNote) {
+          userCaption += `\n\n💬 <b>ملاحظة من الإدارة:</b>\n${adminNote}`;
+        }
+        userCaption += `\n\nشكراً لاختيارك <b>SaveTimePro</b>! 🙏`;
+
+        // Send the file to the user
+        try {
+          await ctx.telegram.sendDocument(order.telegramId, deliveredFileId, {
+            caption: userCaption,
+            parse_mode: 'HTML',
+          });
+        } catch (tgError) {
+          console.error(`Telegram delivery to ${order.telegramId} failed:`, tgError);
+          if (tgError.description && tgError.description.toLowerCase().includes('blocked')) {
+            return ctx.replyWithHTML('❌ فشل التسليم: قام المستخدم بحظر البوت أو لم يبدأ محادثة معه بعد.');
+          }
+          return ctx.replyWithHTML(`❌ فشل التسليم: تعذر إرسال الملف للعميل.\n<code>${tgError.message}</code>`);
+        }
+
+        if (isFirstFile) {
+          order.deliveredFileId = deliveredFileId; // Store first file ID
+          await order.save();
+          return ctx.replyWithHTML(
+            `✅ <b>تم إرسال الملف الأول (1/2) للعميل بنجاح!</b>\n\n` +
+            `يرجى الرد على نفس الرسالة بالملف الثاني (ملف القياس أو ملف إعادة الصياغة الآخر) لإغلاق الطلب.`
+          );
+        } else {
+          order.status = 'completed';
+          await order.save();
+          return ctx.replyWithHTML(
+            `✅ <b>تم إرسال الملف الثاني (2/2) للعميل بنجاح!</b>\n\n` +
+            `تم تسليم الملفين كاملين وتحديث حالة الطلب إلى "مكتمل" بنجاح. 🎉`
+          );
+        }
+      }
+
+      // Normal service logic
       const isAlreadyCompleted = order.status === 'completed';
 
       // Build the caption sent to the user
@@ -276,6 +334,64 @@ const setupAdminDelivery = (bot) => {
       }
 
       const serviceLabel = order.serviceType.replace(/_/g, ' ').toUpperCase();
+      const isAiReduction = order.serviceType === 'ai_reduction';
+
+      if (isAiReduction) {
+        const isFirstFile = !order.deliveredFileId;
+
+        // Build the caption sent to the user
+        let userCaption;
+        if (isFirstFile) {
+          userCaption =
+            `📥 <b>تم استلام الملف الأول (1/2) لطلبك (صورة)</b>\n\n` +
+            `• <b>رقم الطلب:</b> <code>${orderId}</code>\n` +
+            `• <b>نوع الخدمة:</b> <code>تقليل نسبة الذكاء الاصطناعي</code>\n\n` +
+            `⏳ <i>جاري إرسال الملف الثاني المكمل من قبل الإدارة (ملف القياس/إعادة الصياغة)...</i>`;
+        } else {
+          userCaption =
+            `✨ <b>تم استلام الملف الثاني (2/2) لطلبك (صورة)</b> ✨\n\n` +
+            `• <b>رقم الطلب:</b> <code>${orderId}</code>\n` +
+            `• <b>نوع الخدمة:</b> <code>تقليل نسبة الذكاء الاصطناعي</code>\n\n` +
+            `✅ <b>تم تسليم كافة الملفات المطلوبة بنجاح!</b>`;
+        }
+
+        if (adminNote) {
+          userCaption += `\n\n💬 <b>ملاحظة من الإدارة:</b>\n${adminNote}`;
+        }
+        userCaption += `\n\nشكراً لاختيارك <b>SaveTimePro</b>! 🙏`;
+
+        // Send the photo to the user
+        try {
+          await ctx.telegram.sendPhoto(order.telegramId, deliveredFileId, {
+            caption: userCaption,
+            parse_mode: 'HTML',
+          });
+        } catch (tgError) {
+          console.error(`Telegram delivery to ${order.telegramId} failed:`, tgError);
+          if (tgError.description && tgError.description.toLowerCase().includes('blocked')) {
+            return ctx.replyWithHTML('❌ فشل التسليم: قام المستخدم بحظر البوت أو لم يبدأ محادثة معه بعد.');
+          }
+          return ctx.replyWithHTML(`❌ فشل التسليم: تعذر إرسال الصورة للعميل.\n<code>${tgError.message}</code>`);
+        }
+
+        if (isFirstFile) {
+          order.deliveredFileId = deliveredFileId; // Store first file ID
+          await order.save();
+          return ctx.replyWithHTML(
+            `✅ <b>تم إرسال الملف الأول (1/2) للعميل بنجاح (صورة)!</b>\n\n` +
+            `يرجى الرد على نفس الرسالة بالملف الثاني (ملف القياس أو ملف إعادة الصياغة الآخر) لإغلاق الطلب.`
+          );
+        } else {
+          order.status = 'completed';
+          await order.save();
+          return ctx.replyWithHTML(
+            `✅ <b>تم إرسال الملف الثاني (2/2) للعميل بنجاح (صورة)!</b>\n\n` +
+            `تم تسليم الملفين كاملين وتحديث حالة الطلب إلى "مكتمل" بنجاح. 🎉`
+          );
+        }
+      }
+
+      // Normal service logic
       const isAlreadyCompleted = order.status === 'completed';
 
       // Build the caption sent to the user
