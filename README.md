@@ -1,3 +1,12 @@
+---
+title: Savetimepro Bot
+emoji: 🤖
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 7860
+---
+
 # 🤖 SaveTimePro Bot - دليل التشغيل والاستخدام
 
 مرحباً بك في **SaveTimePro Bot**، وهو بوت تليجرام نصف مؤتمت (Semi-automated) مصمم ليكون واجهة متكاملة لتقديم الخدمات الأكاديمية، والترجمة، وخدمات التصميم (السير الذاتية والبورتفوليو)، وإدارة المحافظ المالية للمستخدمين يدوياً عن طريق لوحة تحكم المشرفين (Admin Group).
