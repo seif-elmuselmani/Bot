@@ -776,11 +776,7 @@ const registerAdminCommands = (bot) => {
     }
   });
 
-  // Admin Command: /adminhelp
-  bot.command('adminhelp', async (ctx) => {
-    const isAdmin = await checkAdmin(ctx);
-    if (!isAdmin) return;
-
+  const showAdminHelp = async (ctx) => {
     const adminHelpMsg = 
       `🛠️ <b>لوحة تحكم مشرفي SaveTimePro</b>\n\n` +
       `الأوامر المتاحة للإدارة:\n\n` +
@@ -807,6 +803,18 @@ const registerAdminCommands = (bot) => {
       `• /admin — عرض لوحة التحكم السريعة (أزرار الاختصار) داخل الجروب.`;
 
     await ctx.replyWithHTML(adminHelpMsg);
+  };
+
+  bot.command('adminhelp', async (ctx) => {
+    const isAdmin = await checkAdmin(ctx);
+    if (!isAdmin) return;
+    await showAdminHelp(ctx);
+  });
+
+  bot.command('help', async (ctx, next) => {
+    const isAdmin = await checkAdmin(ctx);
+    if (!isAdmin) return next(); // Not admin or not in admin group; let user command handle it
+    await showAdminHelp(ctx);
   });
 
   // Admin Command: /admin
@@ -890,7 +898,7 @@ const registerAdminCommands = (bot) => {
       `🛠️ <b>لوحة التحكم السريعة:</b>\n` +
       `• /admin — عرض لوحة التحكم السريعة (أزرار الاختصار) داخل الجروب.`;
 
-    await ctx.replyWithHTML(adminHelpMsg);
+    await showAdminHelp(ctx);
   });
 
   bot.hears('❌ إغلاق لوحة التحكم', async (ctx) => {

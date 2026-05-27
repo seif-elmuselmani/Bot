@@ -34,7 +34,7 @@ const checkCancelOrCommand = async (ctx, next) => {
         keyboard: [
           [{ text: '💳 شحن المحفظة' }, { text: '📂 الخدمات' }],
           [{ text: '👤 حسابي الشخصي' }, { text: '📌 تعليمات الاستخدام' }],
-          [{ text: '📞 الدعم الفني' }]
+          [{ text: '❓ المساعدة والأوامر' }, { text: '📞 الدعم الفني' }]
         ],
         resize_keyboard: true
       }
@@ -212,13 +212,15 @@ const rechargeWizard = new WizardScene(
 
       // Format caption for Admin Group using HTML
       const adminCaption = 
-        `📥 <b>طلب شحن محفظة جديد</b>\n\n` +
-        `• <b>رقم الطلب:</b> <code>${escapeHTML(depositId)}</code>\n` +
-        `• <b>المستخدم:</b> ${escapeHTML(firstName)} (@${escapeHTML(username || 'بدون_اسم_مستخدم')})\n` +
-        `• <b>معرّف المستخدم:</b> <code>${escapeHTML(userId)}</code>\n` +
-        `• <b>المبلغ المراد شحنه:</b> <code>${amount} نقطة</code>\n` +
-        `• <b>رقم المحول:</b> <code>${escapeHTML(phone)}</code>\n\n` +
-        `يرجى مراجعة إيصال الدفع المرفق واتخاذ الإجراء الملائم:`;
+        `💳 <b>[طلب شحن محفظة جديد]</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n` +
+        `🆔 <b>رقم العملية:</b> <code>${escapeHTML(depositId)}</code>\n` +
+        `👤 <b>العميل:</b> ${escapeHTML(firstName)} (@${escapeHTML(username || 'بدون_اسم_مستخدم')})\n` +
+        `🔑 <b>معرّف العميل (ID):</b> <code>${escapeHTML(userId)}</code>\n` +
+        `💰 <b>المبلغ المطلوب:</b> <code>${amount} نقطة (جنيه)</code>\n` +
+        `📞 <b>رقم المحول:</b> <code>${escapeHTML(phone)}</code>\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n` +
+        `🔎 <i>يرجى مراجعة إيصال الدفع المرفق واتخاذ الإجراء أدناه:</i>`;
 
       const keyboardMarkup = {
         inline_keyboard: [
@@ -252,7 +254,7 @@ const rechargeWizard = new WizardScene(
             keyboard: [
               [{ text: '💳 شحن المحفظة' }, { text: '📂 الخدمات' }],
               [{ text: '👤 حسابي الشخصي' }, { text: '📌 تعليمات الاستخدام' }],
-              [{ text: '📞 الدعم الفني' }]
+              [{ text: '❓ المساعدة والأوامر' }, { text: '📞 الدعم الفني' }]
             ],
             resize_keyboard: true
           }

@@ -34,7 +34,7 @@ const checkCancelOrCommand = async (ctx, next) => {
         keyboard: [
           [{ text: '💳 شحن المحفظة' }, { text: '📂 الخدمات' }],
           [{ text: '👤 حسابي الشخصي' }, { text: '📌 تعليمات الاستخدام' }],
-          [{ text: '📞 الدعم الفني' }]
+          [{ text: '❓ المساعدة والأوامر' }, { text: '📞 الدعم الفني' }]
         ],
         resize_keyboard: true
       }
@@ -248,14 +248,17 @@ const designWizard = new WizardScene(
 
       // Format caption for Admin Group using HTML
       const adminCaption = 
-        `🎨 <b>طلب تصميم سيرة/بورتفوليو جديد</b>\n\n` +
-        `• <b>نوع الخدمة:</b> <code>${escapeHTML(serviceName)}</code>\n` +
-        `• <b>رقم الطلب:</b> <code>${escapeHTML(orderId)}</code>\n` +
-        `• <b>معرّف المستخدم:</b> <code>${escapeHTML(userId)}</code>\n` +
-        `• <b>المستخدم:</b> ${escapeHTML(firstName)} (@${escapeHTML(username || 'بدون_اسم_مستخدم')})\n` +
-        `• <b>التكلفة المخصومة:</b> <code>${price} نقطة</code>\n` +
-        `• <b>الملاحظات والتعليمات:</b> <i>${escapeHTML(notes)}</i>\n\n` +
-        `📥 <b>الإجراء المطلوب:</b> قم بالرد على رسالة هذا الملف بملفات التصميم المكتملة ليتم إرسالها للمستخدم وتغيير حالة الطلب تلقائياً.`;
+        `🎨 <b>[طلب تصميم جديد]</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n` +
+        `🆔 <b>رقم الطلب:</b> <code>${escapeHTML(orderId)}</code>\n` +
+        `👤 <b>العميل:</b> ${escapeHTML(firstName)} (@${escapeHTML(username || 'بدون')})\n` +
+        `🔑 <b>معرّف العميل (ID):</b> <code>${escapeHTML(userId)}</code>\n` +
+        `🛠️ <b>الخدمة المطلوبة:</b> <code>${escapeHTML(serviceName)}</code>\n` +
+        `🪙 <b>التكلفة المخصومة:</b> <code>${price} نقطة</code>\n` +
+        `📝 <b>ملاحظات العميل:</b> <i>${escapeHTML(notes)}</i>\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n` +
+        `📥 <b>الإجراء المطلوب:</b>\n` +
+        `قم بالرد على رسالة هذا الملف بملف التصميم المكتمل لتسليمه للعميل مباشرة وإغلاق الطلب.`;
 
       // 3. Dispatch document to Admin Group first
       const adminSentMessage = await ctx.telegram.sendDocument(adminGroupId, referenceFileId, {
@@ -294,7 +297,7 @@ const designWizard = new WizardScene(
             keyboard: [
               [{ text: '💳 شحن المحفظة' }, { text: '📂 الخدمات' }],
               [{ text: '👤 حسابي الشخصي' }, { text: '📌 تعليمات الاستخدام' }],
-              [{ text: '📞 الدعم الفني' }]
+              [{ text: '❓ المساعدة والأوامر' }, { text: '📞 الدعم الفني' }]
             ],
             resize_keyboard: true
           }

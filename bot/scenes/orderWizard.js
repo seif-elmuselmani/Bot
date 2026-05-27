@@ -35,7 +35,7 @@ const checkCancelOrCommand = async (ctx, next) => {
         keyboard: [
           [{ text: '💳 شحن المحفظة' }, { text: '📂 الخدمات' }],
           [{ text: '👤 حسابي الشخصي' }, { text: '📌 تعليمات الاستخدام' }],
-          [{ text: '📞 الدعم الفني' }]
+          [{ text: '❓ المساعدة والأوامر' }, { text: '📞 الدعم الفني' }]
         ],
         resize_keyboard: true
       }
@@ -250,22 +250,28 @@ const orderWizard = new WizardScene(
       let adminCaption;
       if (isAiReduction) {
         adminCaption = 
-          `📥 <b>طلب تقليل نسبة الذكاء الاصطناعي (يحتاج تسعير)</b>\n\n` +
-          `• <b>رقم الطلب:</b> <code>${escapeHTML(orderId)}</code>\n` +
-          `• <b>معرّف المستخدم:</b> <code>${escapeHTML(userId)}</code>\n` +
-          `• <b>المستخدم:</b> ${escapeHTML(firstName)} (@${escapeHTML(username || 'بدون_اسم_مستخدم')})\n` +
-          `• <b>نوع الخدمة:</b> <code>${escapeHTML(formattedService)}</code>\n` +
-          `• <b>الحالة:</b> بانتظار تحديد السعر ⏳\n\n` +
-          `📥 <b>الإجراء المطلوب:</b> يرجى الرد على رسالة هذا الملف بكتابة السعر فقط (مثلاً: <code>250</code>) لإرساله للعميل للموافقة والدفع.`;
+          `✍️ <b>[طلب تقليل نسبة الذكاء الاصطناعي]</b>\n` +
+          `━━━━━━━━━━━━━━━━━━━━\n` +
+          `🆔 <b>رقم الطلب:</b> <code>${escapeHTML(orderId)}</code>\n` +
+          `👤 <b>العميل:</b> ${escapeHTML(firstName)} (@${escapeHTML(username || 'بدون')})\n` +
+          `🔑 <b>معرّف العميل (ID):</b> <code>${escapeHTML(userId)}</code>\n` +
+          `🛠️ <b>الخدمة:</b> <code>${escapeHTML(formattedService)}</code>\n` +
+          `⏳ <b>الحالة:</b> بانتظار تسعير الإدارة\n` +
+          `━━━━━━━━━━━━━━━━━━━━\n` +
+          `📥 <b>الإجراء المطلوب:</b>\n` +
+          `قم بالرد على رسالة هذا الملف بكتابة <b>السعر فقط كأرقام</b> (مثال: <code>250</code>) وسيتم إرساله تلقائياً للعميل للموافقة والدفع.`;
       } else {
         adminCaption = 
-          `📥 <b>طلب مستند أكاديمي جديد</b>\n\n` +
-          `• <b>رقم الطلب:</b> <code>${escapeHTML(orderId)}</code>\n` +
-          `• <b>معرّف المستخدم:</b> <code>${escapeHTML(userId)}</code>\n` +
-          `• <b>المستخدم:</b> ${escapeHTML(firstName)} (@${escapeHTML(username || 'بدون_اسم_مستخدم')})\n` +
-          `• <b>نوع الخدمة:</b> <code>${escapeHTML(formattedService)}</code>\n` +
-          `• <b>التكلفة المخصومة:</b> <code>${price} نقطة</code>\n\n` +
-          `📥 <b>الإجراء المطلوب:</b> يرجى الرد على رسالة هذا الملف بملف النتيجة المكتمل ليتم تسليمه للمستخدم تلقائياً.`;
+          `📊 <b>[طلب فحص مستند جديد]</b>\n` +
+          `━━━━━━━━━━━━━━━━━━━━\n` +
+          `🆔 <b>رقم الطلب:</b> <code>${escapeHTML(orderId)}</code>\n` +
+          `👤 <b>العميل:</b> ${escapeHTML(firstName)} (@${escapeHTML(username || 'بدون')})\n` +
+          `🔑 <b>معرّف العميل (ID):</b> <code>${escapeHTML(userId)}</code>\n` +
+          `🛠️ <b>نوع الخدمة:</b> <code>${escapeHTML(formattedService)}</code>\n` +
+          `🪙 <b>التكلفة المخصومة:</b> <code>${price} نقطة</code>\n` +
+          `━━━━━━━━━━━━━━━━━━━━\n` +
+          `📥 <b>الإجراء المطلوب:</b>\n` +
+          `قم بالرد على هذا الملف بملف (أو ملفات) النتيجة المكتملة ليتم تسليمها للعميل تلقائياً وإتمام الطلب.`;
       }
 
       // 3. Send the document directly to the Admin Group first
@@ -305,7 +311,7 @@ const orderWizard = new WizardScene(
               keyboard: [
                 [{ text: '💳 شحن المحفظة' }, { text: '📂 الخدمات' }],
                 [{ text: '👤 حسابي الشخصي' }, { text: '📌 تعليمات الاستخدام' }],
-                [{ text: '📞 الدعم الفني' }]
+                [{ text: '❓ المساعدة والأوامر' }, { text: '📞 الدعم الفني' }]
               ],
               resize_keyboard: true
             }
@@ -324,7 +330,7 @@ const orderWizard = new WizardScene(
               keyboard: [
                 [{ text: '💳 شحن المحفظة' }, { text: '📂 الخدمات' }],
                 [{ text: '👤 حسابي الشخصي' }, { text: '📌 تعليمات الاستخدام' }],
-                [{ text: '📞 الدعم الفني' }]
+                [{ text: '❓ المساعدة والأوامر' }, { text: '📞 الدعم الفني' }]
               ],
               resize_keyboard: true
             }

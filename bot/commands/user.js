@@ -468,6 +468,35 @@ const registerUserCommands = (bot) => {
     await showInstructionsMenu(ctx);
   });
 
+  const showUserHelp = async (ctx) => {
+    const userHelpMessage = 
+      `❓ <b>دليل المساعدة والأوامر لبوت SaveTimePro</b> 🤖\n\n` +
+      `مرحباً بك! يمكنك استخدام الأوامر التالية للتفاعل مع البوت بسهولة:\n\n` +
+      `👤 <b>أوامر الحساب الشخصي:</b>\n` +
+      `• /start — تهيئة حسابك وفتح لوحة التحكم الرئيسية.\n` +
+      `• /profile — عرض تفاصيل حسابك، رصيدك، ورابط الإحالة ومكافأتك.\n` +
+      `• /promo <code>&lt;الكود&gt;</code> — تفعيل كود الهدية وإضافة نقاط لمحفظتك تلقائياً.\n\n` +
+      `📂 <b>أوامر الخدمات والشحن:</b>\n` +
+      `• /services — عرض قائمة جميع الخدمات المتاحة وأسعارها بالنقاط.\n` +
+      `• /recharge — بدء عملية شحن محفظة النقاط الخاصة بك.\n` +
+      `• /instructions — دليل الاستخدام الكامل، القيود، والأسئلة الشائعة.\n` +
+      `• /help — عرض رسالة المساعدة ودليل الأوامر هذا.\n\n` +
+      `📞 <b>الدعم الفني:</b>\n` +
+      `إذا واجهت أي مشكلة أو كان لديك استفسار خاص، اضغط على <b>الدعم الفني</b> للتواصل الفوري مع الإدارة.`;
+
+    await ctx.replyWithHTML(userHelpMessage);
+  };
+
+  bot.command('help', async (ctx) => {
+    if (ctx.chat.type !== 'private') return;
+    await showUserHelp(ctx);
+  });
+
+  bot.hears('❓ المساعدة والأوامر', async (ctx) => {
+    if (ctx.chat.type !== 'private') return;
+    await showUserHelp(ctx);
+  });
+
   // /recharge Command & hears "💳 شحن المحفظة"
   bot.command('recharge', async (ctx) => {
     if (ctx.chat.type !== 'private') return;
@@ -560,7 +589,7 @@ const registerUserCommands = (bot) => {
           keyboard: [
             [{ text: '💳 شحن المحفظة' }, { text: '📂 الخدمات' }],
             [{ text: '👤 حسابي الشخصي' }, { text: '📌 تعليمات الاستخدام' }],
-            [{ text: '📞 الدعم الفني' }]
+            [{ text: '❓ المساعدة والأوامر' }, { text: '📞 الدعم الفني' }]
           ],
           resize_keyboard: true
         }
@@ -582,7 +611,7 @@ const registerUserCommands = (bot) => {
         keyboard: [
           [{ text: '💳 شحن المحفظة' }, { text: '📂 الخدمات' }],
           [{ text: '👤 حسابي الشخصي' }, { text: '📌 تعليمات الاستخدام' }],
-          [{ text: '📞 الدعم الفني' }]
+          [{ text: '❓ المساعدة والأوامر' }, { text: '📞 الدعم الفني' }]
         ],
         resize_keyboard: true
       }

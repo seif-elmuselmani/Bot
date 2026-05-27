@@ -88,7 +88,8 @@ bot.telegram.setMyCommands([
   { command: 'recharge', description: 'شحن نقاط المحفظة' },
   { command: 'instructions', description: '📌 تعليمات وطريقة استخدام البوت' },
   { command: 'profile', description: 'استعراض بيانات حسابك ورصيدك' },
-  { command: 'promo', description: 'تفعيل أكواد الهدايا والنقاط' }
+  { command: 'promo', description: 'تفعيل أكواد الهدايا والنقاط' },
+  { command: 'help', description: 'دليل المساعدة وعرض الأوامر المتاحة' }
 ]).then(() => {
   console.log('✅ Bot commands menu registered successfully.');
 }).catch((error) => {

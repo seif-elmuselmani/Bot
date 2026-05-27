@@ -14,7 +14,7 @@ RUN npm ci --only=production
 COPY . .
 
 # Expose port (Render/Koyeb/Hugging Face use this port for health checks)
-EXPOSE 7860
+EXPOSE 3000
 
 # Start the application
 CMD ["npm", "start"]
