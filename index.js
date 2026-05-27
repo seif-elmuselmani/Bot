@@ -1211,6 +1211,17 @@ bot.telegram.setMyCommands([
 }).catch((error) => {
   console.error('Failed to register bot commands menu:', error);
 });
+// Simple HTTP server for Render's health checks and to keep the bot alive
+const http = require('http');
+const port = process.env.PORT || 3000;
+const server = http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
+  res.end('SaveTimePro Bot is running! 🤖');
+});
+
+server.listen(port, () => {
+  console.log(`📡 Keep-alive HTTP server listening on port ${port}`);
+});
 
 // Launch Bot
 bot.launch().then(() => {
