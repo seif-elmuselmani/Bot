@@ -17,10 +17,19 @@ const escapeHTML = (str) => {
     .replace(/>/g, '&gt;');
 };
 
-// Helper to check for cancel button or other slash commands
+// Helper to check for cancel button, main menu buttons, or other slash commands
 const checkCancelOrCommand = async (ctx, next) => {
   const text = ctx.message?.text?.trim();
   if (!text) return false;
+
+  const mainButtons = [
+    '💳 شحن المحفظة',
+    '📂 الخدمات',
+    '👤 حسابي الشخصي',
+    '📌 تعليمات الاستخدام',
+    '❓ المساعدة والأوامر',
+    '📞 الدعم الفني'
+  ];
 
   const isCancel = 
     text === '❌ إلغاء الطلب' || 
@@ -43,7 +52,7 @@ const checkCancelOrCommand = async (ctx, next) => {
     return true;
   }
 
-  if (text.startsWith('/')) {
+  if (mainButtons.includes(text) || text.startsWith('/')) {
     await ctx.scene.leave();
     if (next) await next();
     return true;
