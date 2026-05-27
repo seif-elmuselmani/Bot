@@ -269,10 +269,17 @@ const designWizard = new WizardScene(
         `📥 <b>الإجراء المطلوب:</b>\n` +
         `قم بالرد على رسالة هذا الملف بملف التصميم المكتمل لتسليمه للعميل مباشرة وإغلاق الطلب.`;
 
+      const keyboardMarkup = {
+        inline_keyboard: [
+          [{ text: '❌ إلغاء الطلب واسترداد النقاط', callback_data: `admin_refund_order_${orderId}` }]
+        ]
+      };
+
       // 3. Dispatch document to Admin Group first
       const adminSentMessage = await ctx.telegram.sendDocument(adminGroupId, referenceFileId, {
         caption: adminCaption,
         parse_mode: 'HTML',
+        reply_markup: keyboardMarkup
       });
 
       // 4. Deduct balance from user

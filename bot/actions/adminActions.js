@@ -5,6 +5,7 @@
 
 const User = require('../../models/User');
 const Deposit = require('../../models/Deposit');
+const Order = require('../../models/Order');
 
 // Safe HTML escaper for rebuilding captions without formatting breaking the bot
 const escapeHTML = (text) => {
@@ -162,6 +163,84 @@ const registerAdminActions = (bot) => {
     } catch (error) {
       console.error('Error handling reject_deposit callback:', error);
       await ctx.answerCbQuery('⚠️ حدث خطأ في قاعدة البيانات أثناء إلغاء الطلب.', { show_alert: true });
+    }
+  });
+
+  // Handle Admin Order Refund: admin_refund_order_${orderId}
+  bot.action(/^admin_refund_order_(ORD-\d+-\d+)$/, async (ctx) => {
+    const orderId = ctx.match[1];
+    
+    // 1. Strict admin check
+    const adminGroupId = process.env.ADMIN_GROUP_ID;
+    if (!adminGroupId || ctx.chat.id.toString() !== adminGroupId.toString()) {
+      return ctx.answerCbQuery('❌ غير مصرح لك بإجراء هذه العملية.', { show_alert: true });
+    }
+
+    try {
+      const order = await Order.findOne({ orderId });
+      if (!order) {
+        return ctx.answerCbQuery('❌ لم يتم العثور على الطلب.', { show_alert: true });
+      }
+
+      if (order.status === 'cancelled') {
+        return ctx.answerCbQuery('⚠️ هذا الطلب ملغي بالفعل ومسترد النقاط.', { show_alert: true });
+      }
+
+      if (order.status === 'completed') {
+        return ctx.answerCbQuery('⚠️ لا يمكن إلغاء طلب مكتمل بالفعل.', { show_alert: true });
+      }
+
+      const refundAmount = order.price;
+      const userId = order.telegramId;
+
+      // 2. Fetch user to refund
+      const user = await User.findOneAndUpdate(
+        { telegramId: userId },
+        { $inc: { balance: refundAmount } },
+        { new: true }
+      );
+
+      if (!user) {
+        return ctx.answerCbQuery('❌ تعذر العثور على صاحب الطلب لرد النقاط.', { show_alert: true });
+      }
+
+      // 3. Mark order as cancelled
+      order.status = 'cancelled';
+      await order.save();
+
+      // 4. Notify user in private chat
+      try {
+        await ctx.telegram.sendMessage(
+          userId,
+          `⚠️ <b>تم إلغاء طلبك واسترداد نقاطك</b>\n\n` +
+          `• <b>رقم الطلب:</b> <code>${orderId}</code>\n` +
+          `• <b>النقاط المستردة:</b> <code>+${refundAmount} نقطة</code>\n` +
+          `• <b>رصيدك الحالي:</b> <code>${user.balance} نقطة</code>\n\n` +
+          `تم إلغاء الطلب من قبل الإدارة وإعادة النقاط إلى محفظتك بالكامل لتمكينك من الطلب مجدداً.`,
+          { parse_mode: 'HTML' }
+        );
+      } catch (notifyErr) {
+        console.error(`Failed to notify user ${userId} of inline refund:`, notifyErr.message);
+      }
+
+      // 5. Update admin message caption (remove keyboard, append refund status)
+      const cleanCaption = (ctx.callbackQuery.message.caption || ctx.callbackQuery.message.text || '').replace(/[*_`[\]()]/g, '');
+      await ctx.editMessageText(
+        `${cleanCaption}\n\n🔴 <b>الحالة:</b> ❌ تم إلغاء الطلب واسترداد ${refundAmount} نقطة للعميل.`,
+        { parse_mode: 'HTML', reply_markup: null }
+      ).catch(async () => {
+        // Fallback if editMessageText fails (e.g. if it is a photo or document caption)
+        await ctx.editMessageCaption(
+          `${cleanCaption}\n\n🔴 <b>الحالة:</b> ❌ تم إلغاء الطلب واسترداد ${refundAmount} نقطة للعميل.`,
+          { parse_mode: 'HTML', reply_markup: null }
+        ).catch((err) => console.error('Failed to update admin message:', err.message));
+      });
+
+      await ctx.answerCbQuery('💸 تم إلغاء الطلب واسترداد النقاط للعميل.');
+
+    } catch (error) {
+      console.error('Error handling admin_refund_order callback:', error);
+      await ctx.answerCbQuery('⚠️ حدث خطأ في النظام أثناء معالجة الاسترداد.', { show_alert: true });
     }
   });
 };

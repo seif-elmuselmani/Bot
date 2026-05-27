@@ -283,10 +283,17 @@ const orderWizard = new WizardScene(
           `قم بالرد على هذا الملف بملف (أو ملفات) النتيجة المكتملة ليتم تسليمها للعميل تلقائياً وإتمام الطلب.`;
       }
 
+      const keyboardMarkup = isAiReduction ? null : {
+        inline_keyboard: [
+          [{ text: '❌ إلغاء الطلب واسترداد النقاط', callback_data: `admin_refund_order_${orderId}` }]
+        ]
+      };
+
       // 3. Send the document directly to the Admin Group first
       const adminSentMessage = await ctx.telegram.sendDocument(adminGroupId, fileId, {
         caption: adminCaption,
         parse_mode: 'HTML',
+        reply_markup: keyboardMarkup
       });
 
       // 4. If Telegram upload succeeded, deduct points from user's balance

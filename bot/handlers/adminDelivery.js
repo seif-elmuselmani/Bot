@@ -131,12 +131,19 @@ const setupAdminDelivery = (bot) => {
         { parse_mode: 'HTML' }
       );
 
+      const keyboardMarkup = {
+        inline_keyboard: [
+          [{ text: '❌ إلغاء الطلب واسترداد النقاط', callback_data: `admin_refund_order_${orderId}` }]
+        ]
+      };
+
       // Confirm to admin group
       await ctx.replyWithHTML(
         `✅ <b>تم إرسال الرسالة للعميل بنجاح.</b>\n` +
         `• <b>رقم الطلب:</b> <code>${orderId}</code>\n` +
         `• <b>معرّف العميل:</b> <code>${order.telegramId}</code>\n\n` +
-        `<i>ملاحظة: حالة الطلب لم تتغير (لم يُرسَل ملف). أرسل ملفاً لإغلاق الطلب.</i>`
+        `<i>ملاحظة: حالة الطلب لم تتغير (لم يُرسَل ملف). يمكنك الضغط على الزر أدناه لإلغاء الطلب ورد النقاط للعميل فوراً.</i>`,
+        { reply_markup: keyboardMarkup }
       );
 
     } catch (err) {
