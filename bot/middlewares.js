@@ -97,14 +97,26 @@ const registerMiddlewares = (bot) => {
     return next();
   });
 
-  // 3. Persistent Sessions
-  bot.use(mongooseSession());
+  // 3. User Ban Check Middleware (Processed very early)
+  bot.use(async (ctx, next) => {
+    if (!ctx.from) return next();
+    const userId = ctx.from.id.toString();
 
-  // 4. Wizard Stage Registration
-  const stage = new Stage([rechargeWizard, orderWizard, designWizard]);
-  bot.use(stage.middleware());
+    try {
+      const user = await User.findOne({ telegramId: userId });
+      if (user && user.isBanned) {
+        if (ctx.callbackQuery) {
+          return ctx.answerCbQuery('🚫 حسابك محظور من استخدام هذا البوت.', { show_alert: true });
+        }
+        return ctx.reply('🚫 حسابك محظور من استخدام هذا البوت. يرجى التواصل مع الدعم الفني.');
+      }
+    } catch (error) {
+      console.error('Ban middleware check error:', error);
+    }
+    await next();
+  });
 
-  // 5. Maintenance Mode Middleware
+  // 4. Maintenance Mode Middleware (Processed early, before sessions/stages)
   bot.use(async (ctx, next) => {
     if (!ctx.from) return next();
     const adminGroupId = process.env.ADMIN_GROUP_ID;
@@ -137,7 +149,14 @@ const registerMiddlewares = (bot) => {
     return next();
   });
 
-  // 6. Cooldown Rate-Limiting Middleware (prevents command spam)
+  // 5. Persistent Sessions
+  bot.use(mongooseSession());
+
+  // 6. Wizard Stage Registration
+  const stage = new Stage([rechargeWizard, orderWizard, designWizard]);
+  bot.use(stage.middleware());
+
+  // 7. Cooldown Rate-Limiting Middleware (prevents command spam)
   const rateLimitMap = new Map();
   const COOLDOWN_MS = 1000;
 
@@ -164,25 +183,6 @@ const registerMiddlewares = (bot) => {
     }
 
     rateLimitMap.set(userId, now);
-    await next();
-  });
-
-  // 7. User Ban Check Middleware
-  bot.use(async (ctx, next) => {
-    if (!ctx.from) return next();
-    const userId = ctx.from.id.toString();
-
-    try {
-      const user = await User.findOne({ telegramId: userId });
-      if (user && user.isBanned) {
-        if (ctx.callbackQuery) {
-          return ctx.answerCbQuery('🚫 حسابك محظور من استخدام هذا البوت.', { show_alert: true });
-        }
-        return ctx.reply('🚫 حسابك محظور من استخدام هذا البوت. يرجى التواصل مع الدعم الفني.');
-      }
-    } catch (error) {
-      console.error('Ban middleware check error:', error);
-    }
     await next();
   });
 };
