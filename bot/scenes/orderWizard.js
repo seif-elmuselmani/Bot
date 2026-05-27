@@ -73,7 +73,7 @@ const orderWizard = new WizardScene(
     if (isAiReduction) {
       await ctx.replyWithHTML(
         `📥 <b>تقديم طلب خدمة: تقليل نسبة الذكاء الاصطناعي</b>\n\n` +
-        `من فضلك قم برفع وإرسال <b>ملف تقرير فحص الذكاء الاصطناعي (ملف القياس/التقرير)</b> أولاً (يمكن أن يكون صورة أو مستند PDF/Word):\n\n` +
+        `من فضلك قم برفع وإرسال <b>ملف الورد (Word Document)</b> المراد تعديله وتقليل نسبة الـ AI فيه (يجب أن ينتهي بصيغة <code>.docx</code> أو <code>.doc</code>):\n\n` +
         `<i>أرسل كلمة "إلغاء" أو اضغط على الزر بالأسفل لإلغاء العملية.</i>`,
         {
           reply_markup: {
@@ -105,62 +105,45 @@ const orderWizard = new WizardScene(
     return ctx.wizard.next();
   },
 
-  // Step 2: Validate document/photo 1, fetch user details, prompt confirmation or next file
+  // Step 2: Validate document, fetch user details, prompt confirmation
   async (ctx, next) => {
     if (await checkCancelOrCommand(ctx, next)) return;
 
     const serviceType = ctx.session.selectedService;
     const isAiReduction = serviceType === 'ai_reduction';
-
-    const photo = ctx.message?.photo;
     const document = ctx.message?.document;
-    let fileId = null;
-    let fileName = 'document';
-
-    if (photo && photo.length > 0) {
-      fileId = photo[photo.length - 1].file_id;
-      fileName = 'image.jpg';
-    } else if (document) {
-      fileId = document.file_id;
-      fileName = document.file_name || 'document';
-    }
-
-    if (!fileId) {
-      const errorMsg = isAiReduction 
-        ? '❌ يرجى رفع ملف تقرير الفحص (صورة أو مستند PDF/Word) للمتابعة:'
-        : '❌ يرجى رفع ملف مستند صالح (مثل: PDF أو Word) للمتابعة:';
-
-      await ctx.reply(errorMsg, {
-        reply_markup: {
-          keyboard: [[{ text: '❌ إلغاء الطلب' }]],
-          resize_keyboard: true,
-          one_time_keyboard: true
-        }
-      });
-      return; // Wait for document; do not advance
-    }
-
-    // Save document details in wizard state
-    ctx.wizard.state.fileId = fileId;
-    ctx.wizard.state.fileName = fileName;
 
     if (isAiReduction) {
-      // Prompt for the second file (Word doc to edit)
-      await ctx.replyWithHTML(
-        `📝 <b>ملف التقرير المرفوع:</b> <code>${escapeHTML(fileName)}</code>\n\n` +
-        `الآن، من فضلك قم برفع وإرسال <b>ملف الورد (Word Document)</b> المراد تعديله وتقليل نسبة الـ AI فيه (يجب أن يكون مستند ينتهي بصيغة <code>.docx</code> أو <code>.doc</code>):`,
-        {
+      const isWord = document && (
+        document.file_name.endsWith('.docx') || 
+        document.file_name.endsWith('.doc') || 
+        document.mime_type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
+        document.mime_type === 'application/msword'
+      );
+
+      if (!document || !isWord) {
+        await ctx.reply('❌ يجب أن يكون الملف المرفوع مستند Word (ينتهي بصيغة .docx أو .doc) حتى نتمكن من تعديله. من فضلك ارفع ملف الورد الصحيح:', {
           reply_markup: {
             keyboard: [[{ text: '❌ إلغاء الطلب' }]],
             resize_keyboard: true,
             one_time_keyboard: true
           }
-        }
-      );
-      return ctx.wizard.next();
+        });
+        return; // Wait for correct document
+      }
+    } else {
+      if (!document) {
+        await ctx.reply('❌ يرجى رفع ملف مستند صالح (مثل: PDF أو Word) للمتابعة:', {
+          reply_markup: {
+            keyboard: [[{ text: '❌ إلغاء الطلب' }]],
+            resize_keyboard: true,
+            one_time_keyboard: true
+          }
+        });
+        return; // Wait for document
+      }
     }
 
-    // Normal service validation & confirmation prompt
     const price = ctx.session.selectedPrice;
     const userId = ctx.from.id.toString();
 
@@ -171,24 +154,30 @@ const orderWizard = new WizardScene(
         return ctx.scene.leave();
       }
 
-      if (user.balance < price) {
+      if (!isAiReduction && user.balance < price) {
         await ctx.reply(`❌ رصيدك الحالي غير كافٍ لإتمام هذا الطلب (سعر الخدمة: ${price} نقطة، رصيدك: ${user.balance} نقطة). يرجى شحن محفظتك عبر /recharge أولاً.`);
         return ctx.scene.leave();
       }
 
+      // Save document details in wizard state
+      ctx.wizard.state.fileId = document.file_id;
+      ctx.wizard.state.fileName = document.file_name || 'document';
+
       const formattedService = serviceType.replace(/_/g, ' ').toUpperCase();
+      const costLabel = isAiReduction ? 'سيتم تحديده لاحقاً من الإدارة' : `${price} نقطة`;
+      const confirmButtonText = isAiReduction ? '✅ تأكيد وإرسال الملف للتسعير' : '✅ تأكيد وتقديم الطلب';
 
       await ctx.replyWithHTML(
         `📋 <b>تأكيد طلب الخدمة</b>\n\n` +
         `• <b>الخدمة المطلوبة:</b> <code>${escapeHTML(formattedService)}</code>\n` +
         `• <b>الملف المرفق:</b> <code>${escapeHTML(ctx.wizard.state.fileName)}</code>\n` +
-        `• <b>التكلفة:</b> <b>${price} نقطة</b>\n` +
+        `• <b>التكلفة:</b> <b>${costLabel}</b>\n` +
         `• <b>رصيدك الحالي:</b> <code>${user.balance} نقطة</code>\n\n` +
-        `هل تريد تأكيد تقديم الطلب وخصم النقاط الآن؟`,
+        (isAiReduction ? `هل تريد تأكيد إرسال الملف للإدارة ليقوموا بتحديد السعر؟` : `هل تريد تأكيد تقديم الطلب وخصم النقاط الآن؟`),
         {
           reply_markup: {
             keyboard: [
-              [{ text: '✅ تأكيد وتقديم الطلب' }],
+              [{ text: confirmButtonText }],
               [{ text: '❌ إلغاء الطلب' }]
             ],
             resize_keyboard: true,
@@ -205,53 +194,71 @@ const orderWizard = new WizardScene(
     }
   },
 
-  // Step 3: Confirm normal service OR Receive Word document for AI reduction
+  // Step 3: Receive confirmation, deduct points, record order, notify admins
   async (ctx, next) => {
     if (await checkCancelOrCommand(ctx, next)) return;
 
     const serviceType = ctx.session.selectedService;
+    const price = ctx.session.selectedPrice;
     const isAiReduction = serviceType === 'ai_reduction';
+    const confirmButtonText = isAiReduction ? '✅ تأكيد وإرسال الملف للتسعير' : '✅ تأكيد وتقديم الطلب';
 
-    if (!isAiReduction) {
-      // Handle normal service confirmation
-      const text = ctx.message?.text?.trim();
-      if (text !== '✅ تأكيد وتقديم الطلب') {
-        await ctx.reply('❌ يرجى استخدام الأزرار بالأسفل لتأكيد تقديم الطلب أو إلغائه:', {
-          reply_markup: {
-            keyboard: [
-              [{ text: '✅ تأكيد وتقديم الطلب' }],
-              [{ text: '❌ إلغاء الطلب' }]
-            ],
-            resize_keyboard: true,
-            one_time_keyboard: true
-          }
-        });
-        return; // Do not advance
+    const text = ctx.message?.text?.trim();
+    if (text !== confirmButtonText) {
+      await ctx.reply('❌ يرجى استخدام الأزرار بالأسفل لتأكيد تقديم الطلب أو إلغائه:', {
+        reply_markup: {
+          keyboard: [
+            [{ text: confirmButtonText }],
+            [{ text: '❌ إلغاء الطلب' }]
+          ],
+          resize_keyboard: true,
+          one_time_keyboard: true
+        }
+      });
+      return; // Do not advance
+    }
+
+    const userId = ctx.from.id.toString();
+    const username = ctx.from.username || '';
+    const firstName = ctx.from.first_name || '';
+    const fileId = ctx.wizard.state.fileId;
+
+    try {
+      // 1. Fetch user to re-verify balance
+      const user = await User.findOne({ telegramId: userId });
+      if (!user) {
+        await ctx.reply('❌ لم يتم العثور على حسابك. يرجى البدء بـ /start.');
+        return ctx.scene.leave();
       }
 
-      // Process normal service order submission
-      const price = ctx.session.selectedPrice;
-      const userId = ctx.from.id.toString();
-      const username = ctx.from.username || '';
-      const firstName = ctx.from.first_name || '';
-      const fileId = ctx.wizard.state.fileId;
+      if (!isAiReduction && user.balance < price) {
+        await ctx.reply('❌ رصيدك الحالي غير كافٍ لإتمام هذا الطلب. يرجى شحن محفظتك عبر /recharge أولاً.');
+        return ctx.scene.leave();
+      }
 
-      try {
-        const user = await User.findOne({ telegramId: userId });
-        if (!user || user.balance < price) {
-          await ctx.reply('❌ رصيدك الحالي غير كافٍ لإتمام هذا الطلب. يرجى شحن محفظتك عبر /recharge أولاً.');
-          return ctx.scene.leave();
-        }
+      // 2. Generate unique order ID
+      const dateString = new Date().toISOString().slice(0,10).replace(/-/g, '');
+      const randomDigits = Math.floor(1000 + Math.random() * 9000);
+      const orderId = `ORD-${dateString}-${randomDigits}`;
 
-        const dateString = new Date().toISOString().slice(0,10).replace(/-/g, '');
-        const randomDigits = Math.floor(1000 + Math.random() * 9000);
-        const orderId = `ORD-${dateString}-${randomDigits}`;
+      const adminGroupId = process.env.ADMIN_GROUP_ID;
+      if (!adminGroupId) {
+        throw new Error('ADMIN_GROUP_ID environment variable is missing.');
+      }
 
-        const adminGroupId = process.env.ADMIN_GROUP_ID;
-        if (!adminGroupId) throw new Error('ADMIN_GROUP_ID is missing.');
-
-        const formattedService = serviceType.replace(/_/g, ' ').toUpperCase();
-        const adminCaption = 
+      const formattedService = serviceType.replace(/_/g, ' ').toUpperCase();
+      let adminCaption;
+      if (isAiReduction) {
+        adminCaption = 
+          `📥 <b>طلب تقليل نسبة الذكاء الاصطناعي (يحتاج تسعير)</b>\n\n` +
+          `• <b>رقم الطلب:</b> <code>${escapeHTML(orderId)}</code>\n` +
+          `• <b>معرّف المستخدم:</b> <code>${escapeHTML(userId)}</code>\n` +
+          `• <b>المستخدم:</b> ${escapeHTML(firstName)} (@${escapeHTML(username || 'بدون_اسم_مستخدم')})\n` +
+          `• <b>نوع الخدمة:</b> <code>${escapeHTML(formattedService)}</code>\n` +
+          `• <b>الحالة:</b> بانتظار تحديد السعر ⏳\n\n` +
+          `📥 <b>الإجراء المطلوب:</b> يرجى الرد على رسالة هذا الملف بكتابة السعر فقط (مثلاً: <code>250</code>) لإرساله للعميل للموافقة والدفع.`;
+      } else {
+        adminCaption = 
           `📥 <b>طلب مستند أكاديمي جديد</b>\n\n` +
           `• <b>رقم الطلب:</b> <code>${escapeHTML(orderId)}</code>\n` +
           `• <b>معرّف المستخدم:</b> <code>${escapeHTML(userId)}</code>\n` +
@@ -259,26 +266,52 @@ const orderWizard = new WizardScene(
           `• <b>نوع الخدمة:</b> <code>${escapeHTML(formattedService)}</code>\n` +
           `• <b>التكلفة المخصومة:</b> <code>${price} نقطة</code>\n\n` +
           `📥 <b>الإجراء المطلوب:</b> يرجى الرد على رسالة هذا الملف بملف النتيجة المكتمل ليتم تسليمه للمستخدم تلقائياً.`;
+      }
 
-        const adminSentMessage = await ctx.telegram.sendDocument(adminGroupId, fileId, {
-          caption: adminCaption,
-          parse_mode: 'HTML',
-        });
+      // 3. Send the document directly to the Admin Group first
+      const adminSentMessage = await ctx.telegram.sendDocument(adminGroupId, fileId, {
+        caption: adminCaption,
+        parse_mode: 'HTML',
+      });
 
+      // 4. If Telegram upload succeeded, deduct points from user's balance
+      if (!isAiReduction) {
         user.balance -= price;
         await user.save();
+        console.log(`Deducted ${price} points from user ${userId}. New balance: ${user.balance}`);
+      }
 
-        const order = new Order({
-          orderId,
-          telegramId: userId,
-          serviceType,
-          price,
-          fileId,
-          status: 'in_progress',
-          adminMessageId: adminSentMessage.message_id
-        });
-        await order.save();
+      // 5. Create and save the new Order in MongoDB (single write)
+      const order = new Order({
+        orderId,
+        telegramId: userId,
+        serviceType,
+        price: isAiReduction ? 0 : price,
+        fileId,
+        status: isAiReduction ? 'pending_payment' : 'in_progress',
+        adminMessageId: adminSentMessage.message_id
+      });
+      await order.save();
 
+      // 6. Notify user and re-attach main menu
+      if (isAiReduction) {
+        await ctx.replyWithHTML(
+          `✅ <b>تم تقديم طلبك بنجاح!</b>\n\n` +
+          `• <b>رقم الطلب:</b> <code>${escapeHTML(orderId)}</code>\n` +
+          `• <b>الحالة:</b> بانتظار تحديد السعر من قبل الإدارة ⏳\n\n` +
+          `سيقوم المشرفون بفحص الملف وإرسال عرض السعر المناسب لك هنا للموافقة والدفع.`,
+          {
+            reply_markup: {
+              keyboard: [
+                [{ text: '💳 شحن المحفظة' }, { text: '📂 الخدمات' }],
+                [{ text: '👤 حسابي الشخصي' }, { text: '📌 تعليمات الاستخدام' }],
+                [{ text: '📞 الدعم الفني' }]
+              ],
+              resize_keyboard: true
+            }
+          }
+        );
+      } else {
         await ctx.replyWithHTML(
           `✅ <b>تم تقديم طلبك بنجاح!</b>\n\n` +
           `• <b>رقم الطلب:</b> <code>${escapeHTML(orderId)}</code>\n` +
@@ -297,186 +330,15 @@ const orderWizard = new WizardScene(
             }
           }
         );
-
-        delete ctx.session.selectedService;
-        delete ctx.session.selectedPrice;
-
-      } catch (error) {
-        console.error('Order Wizard Step 3 error:', error);
-        await ctx.reply('⚠️ حدث خطأ أثناء إرسال طلب الخدمة.');
-      }
-      return ctx.scene.leave();
-
-    } else {
-      // Handle receiving the Word file for AI reduction
-      const document = ctx.message?.document;
-      const isWord = document && (
-        document.file_name.endsWith('.docx') || 
-        document.file_name.endsWith('.doc') || 
-        document.mime_type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
-        document.mime_type === 'application/msword'
-      );
-
-      if (!document || !isWord) {
-        await ctx.reply('❌ يجب أن يكون الملف المرفوع مستند Word (ينتهي بصيغة .docx أو .doc) حتى نتمكن من تعديله. من فضلك ارفع ملف الورد الصحيح:', {
-          reply_markup: {
-            keyboard: [[{ text: '❌ إلغاء الطلب' }]],
-            resize_keyboard: true,
-            one_time_keyboard: true
-          }
-        });
-        return; // Stay in this step and wait for a valid Word doc
       }
 
-      ctx.wizard.state.wordFileId = document.file_id;
-      ctx.wizard.state.wordFileName = document.file_name;
-
-      const userId = ctx.from.id.toString();
-      try {
-        const user = await User.findOne({ telegramId: userId });
-        if (!user) {
-          await ctx.reply('❌ لم يتم العثور على حسابك. يرجى البدء بـ /start.');
-          return ctx.scene.leave();
-        }
-
-        await ctx.replyWithHTML(
-          `📋 <b>تأكيد طلب تقليل نسبة الذكاء الاصطناعي</b>\n\n` +
-          `• <b>ملف التقرير (القياس):</b> <code>${escapeHTML(ctx.wizard.state.fileName)}</code>\n` +
-          `• <b>ملف الورد للتعديل:</b> <code>${escapeHTML(ctx.wizard.state.wordFileName)}</code>\n` +
-          `• <b>التكلفة:</b> <b>سيتم تحديدها لاحقاً من الإدارة</b>\n` +
-          `• <b>رصيدك الحالي:</b> <code>${user.balance} نقطة</code>\n\n` +
-          `هل تريد تأكيد إرسال الملفات للإدارة لتسعير الطلب؟`,
-          {
-            reply_markup: {
-              keyboard: [
-                [{ text: '✅ تأكيد وإرسال الملفات للتسعير' }],
-                [{ text: '❌ إلغاء الطلب' }]
-              ],
-              resize_keyboard: true,
-              one_time_keyboard: true
-            }
-          }
-        );
-        return ctx.wizard.next();
-
-      } catch (err) {
-        console.error(err);
-        await ctx.reply('⚠️ حدث خطأ في النظام.');
-        return ctx.scene.leave();
-      }
-    }
-  },
-
-  // Step 4: Confirm and submit files for AI reduction
-  async (ctx, next) => {
-    if (await checkCancelOrCommand(ctx, next)) return;
-
-    const text = ctx.message?.text?.trim();
-    if (text !== '✅ تأكيد وإرسال الملفات للتسعير') {
-      await ctx.reply('❌ يرجى استخدام الأزرار بالأسفل لتأكيد إرسال الملفات للتسعير أو إلغائه:', {
-        reply_markup: {
-          keyboard: [
-            [{ text: '✅ تأكيد وإرسال الملفات للتسعير' }],
-            [{ text: '❌ إلغاء الطلب' }]
-          ],
-          resize_keyboard: true,
-          one_time_keyboard: true
-        }
-      });
-      return;
-    }
-
-    const userId = ctx.from.id.toString();
-    const username = ctx.from.username || '';
-    const firstName = ctx.from.first_name || '';
-    const fileId = ctx.wizard.state.fileId;
-    const wordFileId = ctx.wizard.state.wordFileId;
-
-    try {
-      const user = await User.findOne({ telegramId: userId });
-      if (!user) {
-        await ctx.reply('❌ لم يتم العثور على حسابك.');
-        return ctx.scene.leave();
-      }
-
-      const dateString = new Date().toISOString().slice(0,10).replace(/-/g, '');
-      const randomDigits = Math.floor(1000 + Math.random() * 9000);
-      const orderId = `ORD-${dateString}-${randomDigits}`;
-
-      const adminGroupId = process.env.ADMIN_GROUP_ID;
-      if (!adminGroupId) throw new Error('ADMIN_GROUP_ID is missing.');
-
-      // Send File 1 (AI Report) to admin group
-      const caption1 = 
-        `📥 <b>طلب تقليل نسبة الذكاء الاصطناعي (يحتاج تسعير)</b>\n\n` +
-        `• <b>رقم الطلب:</b> <code>${escapeHTML(orderId)}</code>\n` +
-        `• <b>المستخدم:</b> ${escapeHTML(firstName)} (@${escapeHTML(username || 'بدون_اسم_مستخدم')})\n` +
-        `• <b>نوع الخدمة:</b> <code>تقليل نسبة الذكاء الاصطناعي</code>\n` +
-        `• <b>الحالة:</b> بانتظار التقييم والتسعير ⏳\n\n` +
-        `📎 <b>ملف 1: تقرير قياس نسبة الـ AI</b>`;
-
-      // Send AI report (can be document or photo)
-      let adminSentMessage;
-      if (ctx.wizard.state.fileName.endsWith('.jpg') || ctx.wizard.state.fileName.endsWith('.png') || ctx.wizard.state.fileName === 'image.jpg') {
-        adminSentMessage = await ctx.telegram.sendPhoto(adminGroupId, fileId, {
-          caption: caption1,
-          parse_mode: 'HTML'
-        });
-      } else {
-        adminSentMessage = await ctx.telegram.sendDocument(adminGroupId, fileId, {
-          caption: caption1,
-          parse_mode: 'HTML'
-        });
-      }
-
-      // Send File 2 (Word doc to edit) to admin group as a follow-up
-      const caption2 = 
-        `📥 <b>ملف الورد المطلوب تعديله</b>\n\n` +
-        `• <b>رقم الطلب:</b> <code>${escapeHTML(orderId)}</code>\n` +
-        `📎 <b>ملف 2: ملف الورد للتعديل</b>\n\n` +
-        `📥 <b>الإجراء المطلوب:</b> يرجى الرد على رسالة الملف رقم (1 أو 2) بكتابة السعر فقط (مثلاً: <code>250</code>) لإرساله للعميل للموافقة والدفع.`;
-
-      await ctx.telegram.sendDocument(adminGroupId, wordFileId, {
-        caption: caption2,
-        parse_mode: 'HTML'
-      });
-
-      // Save order in database with status pending_payment
-      const order = new Order({
-        orderId,
-        telegramId: userId,
-        serviceType: 'ai_reduction',
-        price: 0,
-        fileId,
-        wordFileId,
-        status: 'pending_payment',
-        adminMessageId: adminSentMessage.message_id
-      });
-      await order.save();
-
-      await ctx.replyWithHTML(
-        `✅ <b>تم تقديم طلبك بنجاح!</b>\n\n` +
-        `• <b>رقم الطلب:</b> <code>${escapeHTML(orderId)}</code>\n` +
-        `• <b>الحالة:</b> بانتظار تحديد السعر من قبل الإدارة ⏳\n\n` +
-        `تم إرسال تقرير الفحص وملف الورد للإدارة. سيقوم المشرفون بدراسة الملف وإرسال عرض السعر المناسب لك هنا للموافقة والدفع.`,
-        {
-          reply_markup: {
-            keyboard: [
-              [{ text: '💳 شحن المحفظة' }, { text: '📂 الخدمات' }],
-              [{ text: '👤 حسابي الشخصي' }, { text: '📌 تعليمات الاستخدام' }],
-              [{ text: '📞 الدعم الفني' }]
-            ],
-            resize_keyboard: true
-          }
-        }
-      );
-
+      // Clear selection session variables
       delete ctx.session.selectedService;
       delete ctx.session.selectedPrice;
 
     } catch (error) {
-      console.error('Order Wizard Step 4 Error:', error);
-      await ctx.reply('⚠️ حدث خطأ أثناء إرسال الملفات.');
+      console.error('Order Wizard Submission Error:', error);
+      await ctx.reply('⚠️ حدث خطأ أثناء إرسال طلب الخدمة للإدارة. لم يتم خصم أي نقاط من رصيدك. يرجى المحاولة مرة أخرى أو التواصل مع الدعم الفني.');
     }
 
     return ctx.scene.leave();
@@ -484,3 +346,5 @@ const orderWizard = new WizardScene(
 );
 
 module.exports = orderWizard;
+
+

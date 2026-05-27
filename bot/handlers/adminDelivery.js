@@ -177,21 +177,27 @@ const setupAdminDelivery = (bot) => {
         return ctx.replyWithHTML(`⚠️ خطأ: لم يتم العثور على الطلب رقم <code>${orderId}</code>.`);
       }
 
-      if (order.status === 'completed') {
-        return ctx.replyWithHTML(`ℹ️ الطلب رقم <code>${orderId}</code> مكتمل بالفعل مسبقاً.`);
-      }
       if (order.status === 'cancelled') {
         return ctx.replyWithHTML(`❌ الطلب رقم <code>${orderId}</code> ملغي (تم استرداد نقاطه) ولا يمكن تسليمه.`);
       }
 
       const serviceLabel = order.serviceType.replace(/_/g, ' ').toUpperCase();
+      const isAlreadyCompleted = order.status === 'completed';
 
       // Build the caption sent to the user
-      let userCaption =
-        `✨ <b>ملف الخدمة الخاص بك جاهز!</b> ✨\n\n` +
-        `• <b>رقم الطلب:</b> <code>${orderId}</code>\n` +
-        `• <b>نوع الخدمة:</b> <code>${serviceLabel}</code>\n` +
-        `• <b>الحالة:</b> مكتمل ✅`;
+      let userCaption;
+      if (isAlreadyCompleted) {
+        userCaption =
+          `📎 <b>ملف إضافي/تقرير تابع لطلبك:</b>\n\n` +
+          `• <b>رقم الطلب:</b> <code>${orderId}</code>\n` +
+          `• <b>نوع الخدمة:</b> <code>${serviceLabel}</code>`;
+      } else {
+        userCaption =
+          `✨ <b>ملف الخدمة الخاص بك جاهز!</b> ✨\n\n` +
+          `• <b>رقم الطلب:</b> <code>${orderId}</code>\n` +
+          `• <b>نوع الخدمة:</b> <code>${serviceLabel}</code>\n` +
+          `• <b>الحالة:</b> مكتمل ✅`;
+      }
 
       if (adminNote) {
         userCaption += `\n\n💬 <b>ملاحظة من الإدارة:</b>\n${adminNote}`;
@@ -219,12 +225,13 @@ const setupAdminDelivery = (bot) => {
       await order.save();
 
       // Confirm to admin group
+      const confirmLabel = isAlreadyCompleted ? 'ملف إضافي للطلب' : 'الطلب للعميل';
       await ctx.replyWithHTML(
-        `✅ <b>تم تسليم الطلب للعميل بنجاح!</b>\n\n` +
+        `✅ <b>تم تسليم ${confirmLabel} بنجاح!</b>\n\n` +
         `• <b>رقم الطلب:</b> <code>${orderId}</code>\n` +
         `• <b>معرّف العميل:</b> <code>${order.telegramId}</code>\n` +
         (adminNote ? `• <b>الملاحظة المرفقة:</b> ${adminNote}\n` : '') +
-        `\n<i>تم تحديث حالة الطلب إلى "مكتمل" في قاعدة البيانات.</i>`
+        `\n<i>حالة الطلب في قاعدة البيانات: "مكتمل".</i>`
       );
 
     } catch (dbError) {
@@ -264,21 +271,27 @@ const setupAdminDelivery = (bot) => {
         return ctx.replyWithHTML(`⚠️ خطأ: لم يتم العثور على الطلب رقم <code>${orderId}</code>.`);
       }
 
-      if (order.status === 'completed') {
-        return ctx.replyWithHTML(`ℹ️ الطلب رقم <code>${orderId}</code> مكتمل بالفعل مسبقاً.`);
-      }
       if (order.status === 'cancelled') {
         return ctx.replyWithHTML(`❌ الطلب رقم <code>${orderId}</code> ملغي (تم استرداد نقاطه) ولا يمكن تسليمه.`);
       }
 
       const serviceLabel = order.serviceType.replace(/_/g, ' ').toUpperCase();
+      const isAlreadyCompleted = order.status === 'completed';
 
       // Build the caption sent to the user
-      let userCaption =
-        `✨ <b>ملف الخدمة الخاص بك جاهز!</b> ✨\n\n` +
-        `• <b>رقم الطلب:</b> <code>${orderId}</code>\n` +
-        `• <b>نوع الخدمة:</b> <code>${serviceLabel}</code>\n` +
-        `• <b>الحالة:</b> مكتمل ✅`;
+      let userCaption;
+      if (isAlreadyCompleted) {
+        userCaption =
+          `📎 <b>ملف إضافي/تقرير تابع لطلبك:</b>\n\n` +
+          `• <b>رقم الطلب:</b> <code>${orderId}</code>\n` +
+          `• <b>نوع الخدمة:</b> <code>${serviceLabel}</code>`;
+      } else {
+        userCaption =
+          `✨ <b>ملف الخدمة الخاص بك جاهز!</b> ✨\n\n` +
+          `• <b>رقم الطلب:</b> <code>${orderId}</code>\n` +
+          `• <b>نوع الخدمة:</b> <code>${serviceLabel}</code>\n` +
+          `• <b>الحالة:</b> مكتمل ✅`;
+      }
 
       if (adminNote) {
         userCaption += `\n\n💬 <b>ملاحظة من الإدارة:</b>\n${adminNote}`;
@@ -306,12 +319,13 @@ const setupAdminDelivery = (bot) => {
       await order.save();
 
       // Confirm to admin group
+      const confirmLabel = isAlreadyCompleted ? 'ملف إضافي للطلب (صورة)' : 'الطلب للعميل (صورة)';
       await ctx.replyWithHTML(
-        `✅ <b>تم تسليم الطلب للعميل بنجاح (صورة)!</b>\n\n` +
+        `✅ <b>تم تسليم ${confirmLabel} بنجاح!</b>\n\n` +
         `• <b>رقم الطلب:</b> <code>${orderId}</code>\n` +
         `• <b>معرّف العميل:</b> <code>${order.telegramId}</code>\n` +
         (adminNote ? `• <b>الملاحظة المرفقة:</b> ${adminNote}\n` : '') +
-        `\n<i>تم تحديث حالة الطلب إلى "مكتمل" في قاعدة البيانات.</i>`
+        `\n<i>حالة الطلب في قاعدة البيانات: "مكتمل".</i>`
       );
 
     } catch (dbError) {
