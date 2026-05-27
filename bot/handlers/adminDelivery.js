@@ -50,6 +50,72 @@ const setupAdminDelivery = (bot) => {
         return ctx.replyWithHTML(`❌ الطلب رقم <code>${orderId}</code> ملغي (تم استرداد نقاطه) ولا يمكن مراسلة العميل بشأنه.`);
       }
 
+      // Handle AI reduction pricing quote from admin
+      if (order.status === 'pending_payment' && order.serviceType === 'ai_reduction') {
+        const cleanText = message.text.trim();
+        const price = parseInt(cleanText.replace(/[^\d]/g, ''), 10);
+        if (isNaN(price) || price <= 0) {
+          return ctx.replyWithHTML('⚠️ يرجى كتابة السعر كرقم صحيح فقط (مثال: <code>250</code>).');
+        }
+
+        // Update the order price in DB
+        order.price = price;
+        await order.save();
+
+        // Send a message to the user with Accept/Reject inline buttons
+        const quoteMessage =
+          `💰 <b>تحديد سعر خدمة تقليل نسبة الـ AI</b>\n\n` +
+          `تم تحديد سعر طلبك من قبل المشرفين:\n` +
+          `• <b>رقم الطلب:</b> <code>${orderId}</code>\n` +
+          `• <b>السعر المحدد:</b> <code>${price} نقطة</code>\n\n` +
+          `هل توافق على هذا السعر لخصم النقاط والبدء بالعمل؟`;
+
+        const inlineKeyboard = {
+          inline_keyboard: [
+            [
+              { text: `✅ موافقة ودفع ${price} نقطة`, callback_data: `user_accept_price_${orderId}` },
+              { text: `❌ رفض وإلغاء الطلب`, callback_data: `user_reject_price_${orderId}` }
+            ]
+          ]
+        };
+
+        try {
+          await ctx.telegram.sendMessage(order.telegramId, quoteMessage, {
+            parse_mode: 'HTML',
+            reply_markup: inlineKeyboard
+          });
+        } catch (tgError) {
+          console.error(`Failed to send price quote to user ${order.telegramId}:`, tgError);
+          return ctx.replyWithHTML(`❌ فشل إرسال عرض السعر للعميل. قد يكون حظر البوت.\n<code>${tgError.message}</code>`);
+        }
+
+        // Update the admin message caption/text to show that the price is sent
+        const cleanCaption = (repliedMessage.caption || repliedMessage.text || '').replace(/[*_`[\]()]/g, '');
+        try {
+          await ctx.telegram.editMessageCaption(
+            adminGroupId,
+            repliedMessage.message_id,
+            null,
+            `${cleanCaption}\n\n⏳ <b>تم إرسال عرض السعر:</b> <code>${price} نقطة</code> (بانتظار موافقة العميل)`,
+            { parse_mode: 'HTML' }
+          );
+        } catch (editError) {
+          try {
+            await ctx.telegram.editMessageText(
+              adminGroupId,
+              repliedMessage.message_id,
+              null,
+              `${cleanCaption}\n\n⏳ <b>تم إرسال عرض السعر:</b> <code>${price} نقطة</code> (بانتظار موافقة العميل)`,
+              { parse_mode: 'HTML' }
+            );
+          } catch (editError2) {
+            console.error('Failed to update admin message content:', editError2);
+          }
+        }
+
+        return ctx.replyWithHTML(`✅ تم إرسال عرض السعر (<code>${price} نقطة</code>) للعميل بنجاح.`);
+      }
+
       // Deliver text message to the user WITH clear next-step instructions
       const adminNote = message.text;
       const serviceLabel = order.serviceType.replace(/_/g, ' ').toUpperCase();

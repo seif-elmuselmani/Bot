@@ -29,6 +29,7 @@ const OrderSchema = new mongoose.Schema(
           'portfolio_design',
           'pdf_to_word',
           'translation',
+          'ai_reduction',
         ],
         message: '{VALUE} is not a supported service type.',
       },
@@ -49,6 +50,10 @@ const OrderSchema = new mongoose.Schema(
     },
     fileId: {
       type: String, // Telegram file ID for the source file uploaded by the user
+      trim: true,
+    },
+    wordFileId: {
+      type: String, // Telegram file ID for the Word document to edit
       trim: true,
     },
     textInput: {

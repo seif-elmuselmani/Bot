@@ -5,6 +5,7 @@
 
 const User = require('../../models/User');
 const PromoCode = require('../../models/PromoCode');
+const Order = require('../../models/Order');
 const servicesConfig = require('../config/services');
 
 const { escapeHTML } = require('../utils/helpers');
@@ -77,6 +78,7 @@ const registerUserCommands = (bot) => {
             [{ text: '✏️ تعديل سيرة ATS الحالية (50 نقطة)', callback_data: 'service_design_edit_cv' }],
             [{ text: '💼 إنشاء بورتفوليو (300 نقطة)', callback_data: 'service_design_create_portfolio' }],
             [{ text: '🛠️ تعديل البورتفوليو الحالي (100 نقطة)', callback_data: 'service_design_edit_portfolio' }],
+            [{ text: '✍️ تقليل نسبة الذكاء الاصطناعي (تسعير يدوي)', callback_data: 'service_ai_reduction' }],
             [{ text: 'ℹ️ تفاصيل واستفسار عن الخدمات', callback_data: 'services_info' }]
           ]
         }
@@ -91,15 +93,29 @@ const registerUserCommands = (bot) => {
     try {
       await ctx.answerCbQuery();
       const infoMessage =
-        `ℹ️ <b>تفاصيل واستفسار عن خدمات SaveTimePro</b>\n\n` +
-        `• <b>تقرير التشابه العلمي (60 نقطة):</b> فحص نسبة الاقتباس (Plagiarism) وتحديد المصادر.\n` +
-        `• <b>تقرير فحص الذكاء الاصطناعي (50 نقطة):</b> الكشف عن المحتوى المولد بواسطة AI ونسبته.\n` +
-        `• <b>إنشاء سيرة ATS جديدة (150 نقطة):</b> تصميم سي دي مهني متوافق مع أنظمة الفرز الآلي.\n` +
-        `• <b>تعديل سيرة ATS الحالية (50 نقطة):</b> مراجعة وتحسين سيرتك الذاتية الحالية لتتوافق مع ATS.\n` +
-        `• <b>إنشاء بورتفوليو (300 نقطة):</b> تصميم معرض أعمال متكامل وجذاب لعرض مشاريعك.\n` +
-        `• <b>تعديل البورتفوليو الحالي (100 نقطة):</b> تحديث وتطوير بورتفوليو قائم وتعديل تصميمه.\n\n` +
-        `💼 لدينا أيضاً خدمات مخصصة لتقليل الاقتباس، وإعادة الصياغة، وتقليل نسبة الـ AI. للاستفسار والطلب الخاص تواصل مع الدعم الفني مباشرة.\n\n` +
-        `💬 <b>حساب الدعم الفني (واتساب):</b> <a href="https://wa.me/201223817860">+201223817860</a>`;
+        `ℹ️ <b>دليل وتفاصيل خدمات SaveTimePro المتاحة</b>\n\n` +
+        `• <b>📊 تقرير التشابه العلمي (60 نقطة):</b>\n` +
+        `  1. ارفع ملف البحث بصيغة PDF أو Word.\n` +
+        `  2. يجب ألا يقل الملف عن 300 كلمة.\n` +
+        `  3. ستقوم الإدارة بفحصه وإرسال تقرير الاقتباس المفصل بصيغة PDF خلال 10-15 دقيقة.\n\n` +
+        `• <b>🤖 تقرير فحص الذكاء الاصطناعي (50 نقطة):</b>\n` +
+        `  1. ارفع الملف بصيغة PDF أو Word ليتم فحصه بالكامل.\n` +
+        `  2. ستستلم تقريراً يوضح الجمل المكتوبة بالذكاء الاصطناعي ونسبتها.\n\n` +
+        `• <b>📄 إنشاء سيرة ATS جديدة (150 نقطة):</b>\n` +
+        `  1. اختر الخدمة واكتب بياناتك (الخبرات، التعليم، المهارات) عندما يطلبها البوت.\n` +
+        `  2. ستقوم الإدارة بتصميم سيرة ذاتية احترافية متوافقة مع أنظمة الفرز الإلكتروني (ATS) من الصفر.\n\n` +
+        `• <b>✏️ تعديل سيرة ATS الحالية (50 نقطة):</b>\n` +
+        `  1. ارفع ملف سيرتك الذاتية الحالية.\n` +
+        `  2. <u>ملاحظة:</u> يمكنك تعديل سيرة ذاتية قمت بإنشائها سابقاً عبر البوت، أو تحسين وتعديل أي سيرة أخرى لتصبح متوافقة تماماً مع معايير الـ ATS.\n\n` +
+        `• <b>💼 إنشاء بورتفوليو (300 نقطة):</b>\n` +
+        `  1. أرسل تفاصيل مشاريعك، خبراتك، روابط أعمالك، وصورك الشخصية.\n` +
+        `  2. سيتم بناء ملف بورتفوليو مهني احترافي لعرض أعمالك.\n\n` +
+        `• <b>🛠️ تعديل البورتفوليو الحالي (100 نقطة):</b>\n` +
+        `  1. ارفع البورتفوليو الحالي واكتب التعديلات المطلوبة بوضوح ليتم تطبيقها.\n\n` +
+        `• <b>✍️ تقليل نسبة الذكاء الاصطناعي (تسعير يدوي):</b>\n` +
+        `  1. ارفع الملف المراد معالجته وإعادة صياغته.\n` +
+        `  2. سيتم إرسال الملف للإدارة وسيقومون بتحديد السعر المناسب وإرساله لك للموافقة.\n` +
+        `  3. عند موافقتك ودفع التكلفة المطلوبة، يبدأ العمل فوراً وتسليم الملف بعد انتهائه.`;
 
       await ctx.editMessageText(infoMessage, {
         parse_mode: 'HTML',
@@ -132,6 +148,7 @@ const registerUserCommands = (bot) => {
             [{ text: '✏️ تعديل سيرة ATS الحالية (50 نقطة)', callback_data: 'service_design_edit_cv' }],
             [{ text: '💼 إنشاء بورتفوليو (300 نقطة)', callback_data: 'service_design_create_portfolio' }],
             [{ text: '🛠️ تعديل البورتفوليو الحالي (100 نقطة)', callback_data: 'service_design_edit_portfolio' }],
+            [{ text: '✍️ تقليل نسبة الذكاء الاصطناعي (تسعير يدوي)', callback_data: 'service_ai_reduction' }],
             [{ text: 'ℹ️ تفاصيل واستفسار عن الخدمات', callback_data: 'services_info' }]
           ]
         }
@@ -201,6 +218,122 @@ const registerUserCommands = (bot) => {
     } catch (error) {
       console.error('Error handling service callback:', error);
       await ctx.answerCbQuery('⚠️ حدث خطأ أثناء معالجة الطلب.', { show_alert: true });
+    }
+  });
+
+  // Handle user accepting the quoted price
+  bot.action(/^user_accept_price_(ORD-\d+-\d+)$/, async (ctx) => {
+    const orderId = ctx.match[1];
+    const telegramId = ctx.from.id.toString();
+
+    try {
+      // Find the order
+      const order = await Order.findOne({ orderId, telegramId });
+      if (!order) {
+        return ctx.answerCbQuery('❌ لم يتم العثور على الطلب.', { show_alert: true });
+      }
+
+      if (order.status !== 'pending_payment') {
+        return ctx.answerCbQuery('⚠️ هذا الطلب تم معالجته بالفعل أو دفع قيمته.', { show_alert: true });
+      }
+
+      // Fetch user to check balance
+      const user = await User.findOne({ telegramId });
+      if (!user) {
+        return ctx.answerCbQuery('❌ لم يتم العثور على حسابك.', { show_alert: true });
+      }
+
+      if (user.balance < order.price) {
+        await ctx.answerCbQuery('❌ رصيدك غير كافٍ لدفع قيمة الطلب!', { show_alert: true });
+        await ctx.replyWithHTML(
+          `❌ <b>رصيدك الحالي غير كافٍ!</b>\n\n` +
+          `• <b>تكلفة الطلب:</b> <code>${order.price} نقطة</code>\n` +
+          `• <b>رصيدك الحالي:</b> <code>${user.balance} نقطة</code>\n\n` +
+          `يرجى شحن محفظتك بـ <b>${order.price - user.balance} نقطة</b> إضافية على الأقل، ثم الضغط على زر الموافقة والدفع مجدداً.`
+        );
+        return;
+      }
+
+      // Deduct points
+      user.balance -= order.price;
+      await user.save();
+
+      // Update order status to in_progress
+      order.status = 'in_progress';
+      await order.save();
+
+      await ctx.answerCbQuery('✅ تم خصم النقاط وبدء العمل!');
+      
+      // Update user message
+      await ctx.editMessageText(
+        `✅ <b>تم قبول عرض السعر والدفع بنجاح!</b>\n\n` +
+        `• <b>رقم الطلب:</b> <code>${orderId}</code>\n` +
+        `• <b>المبلغ المخصوم:</b> <code>${order.price} نقطة</code>\n` +
+        `• <b>الرصيد المتبقي:</b> <code>${user.balance} نقطة</code>\n\n` +
+        `بدأ العمل على طلبك بنجاح. ستصلك النتيجة هنا فور انتهاء الإدارة من التعديل.`,
+        { parse_mode: 'HTML' }
+      );
+
+      // Notify admins in the Admin Group
+      const adminGroupId = process.env.ADMIN_GROUP_ID;
+      if (adminGroupId) {
+        await ctx.telegram.sendMessage(
+          adminGroupId,
+          `🟢 <b>العميل وافق على السعر ودفع النقاط!</b>\n\n` +
+          `• <b>رقم الطلب:</b> <code>${orderId}</code>\n` +
+          `• <b>المبلغ المخصوم:</b> <code>${order.price} نقطة</code>\n` +
+          `• <b>العميل:</b> ${escapeHTML(ctx.from.first_name)} (@${escapeHTML(ctx.from.username || '')})\n\n` +
+          `يرجى العمل على الملف والرد عليه بالملف المعدل لتسليمه للعميل.`,
+          { parse_mode: 'HTML' }
+        );
+      }
+
+    } catch (error) {
+      console.error('Error in user_accept_price:', error);
+      await ctx.answerCbQuery('⚠️ حدث خطأ أثناء إتمام العملية.', { show_alert: true });
+    }
+  });
+
+  // Handle user rejecting the quoted price
+  bot.action(/^user_reject_price_(ORD-\d+-\d+)$/, async (ctx) => {
+    const orderId = ctx.match[1];
+    const telegramId = ctx.from.id.toString();
+
+    try {
+      const order = await Order.findOne({ orderId, telegramId });
+      if (!order) {
+        return ctx.answerCbQuery('❌ لم يتم العثور على الطلب.', { show_alert: true });
+      }
+
+      if (order.status !== 'pending_payment') {
+        return ctx.answerCbQuery('⚠️ هذا الطلب تم معالجته بالفعل.', { show_alert: true });
+      }
+
+      order.status = 'cancelled';
+      await order.save();
+
+      await ctx.answerCbQuery('❌ تم إلغاء الطلب.');
+      await ctx.editMessageText(
+        `❌ <b>تم رفض عرض السعر وإلغاء الطلب بنجاح.</b>\n` +
+        `• <b>رقم الطلب:</b> <code>${orderId}</code>`,
+        { parse_mode: 'HTML' }
+      );
+
+      // Notify admins
+      const adminGroupId = process.env.ADMIN_GROUP_ID;
+      if (adminGroupId) {
+        await ctx.telegram.sendMessage(
+          adminGroupId,
+          `🔴 <b>تم رفض عرض السعر من قبل العميل وإلغاء الطلب.</b>\n\n` +
+          `• <b>رقم الطلب:</b> <code>${orderId}</code>\n` +
+          `• <b>العميل:</b> ${escapeHTML(ctx.from.first_name)} (@${escapeHTML(ctx.from.username || '')})`,
+          { parse_mode: 'HTML' }
+        );
+      }
+
+    } catch (error) {
+      console.error('Error in user_reject_price:', error);
+      await ctx.answerCbQuery('⚠️ حدث خطأ أثناء إرسال الرفض.', { show_alert: true });
     }
   });
 

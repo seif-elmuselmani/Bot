@@ -9,7 +9,8 @@ const servicesConfig = {
   'design_create_cv': { type: 'cv_design', price: 150, name: 'إنشاء سيرة ذاتية ATS (من سيرة قديمة)' },
   'design_edit_cv': { type: 'cv_design', price: 50, name: 'تعديل/تحديث سيرة ذاتية ATS' },
   'design_create_portfolio': { type: 'portfolio_design', price: 300, name: 'إنشاء بورتفوليو (من سيرة ATS)' },
-  'design_edit_portfolio': { type: 'portfolio_design', price: 100, name: 'تعديل/تحديث بورتفوليو' }
+  'design_edit_portfolio': { type: 'portfolio_design', price: 100, name: 'تعديل/تحديث بورتفوليو' },
+  'ai_reduction': { type: 'ai_reduction', price: 0, name: 'تقليل نسبة الذكاء الاصطناعي' }
 };
 
 module.exports = servicesConfig;
