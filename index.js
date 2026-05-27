@@ -489,6 +489,147 @@ bot.command('stats', async (ctx) => {
   }
 });
 
+// Admin Command: /export or /export_data
+const handleExport = async (ctx) => {
+  const isAdmin = await checkAdmin(ctx);
+  if (!isAdmin) return; // Silent ignore
+
+  try {
+    const statusMsg = await ctx.reply('⏳ جاري تجميع البيانات وتوليد التقرير...');
+
+    // Run Aggregation to join Users with their Deposits (to get latest phone number) and Orders (to get counts)
+    const reportData = await User.aggregate([
+      {
+        $lookup: {
+          from: 'deposits',
+          localField: 'telegramId',
+          foreignField: 'telegramId',
+          as: 'userDeposits'
+        }
+      },
+      {
+        $lookup: {
+          from: 'orders',
+          localField: 'telegramId',
+          foreignField: 'telegramId',
+          as: 'userOrders'
+        }
+      },
+      {
+        $project: {
+          telegramId: 1,
+          username: 1,
+          firstName: 1,
+          lastName: 1,
+          balance: 1,
+          joinedAt: 1,
+          // Get the latest phone number from deposits if exists, otherwise "N/A"
+          phone: {
+            $let: {
+              vars: {
+                lastDeposit: { $arrayElemAt: ["$userDeposits", -1] }
+              },
+              in: { $ifNull: ["$$lastDeposit.senderPhone", "N/A"] }
+            }
+          },
+          // Service counts based on serviceType
+          cvCount: {
+            $size: {
+              $filter: {
+                input: "$userOrders",
+                as: "o",
+                cond: { $eq: ["$$o.serviceType", "cv_design"] }
+              }
+            }
+          },
+          similarityCount: {
+            $size: {
+              $filter: {
+                input: "$userOrders",
+                as: "o",
+                cond: { $eq: ["$$o.serviceType", "similarity_report"] }
+              }
+            }
+          },
+          portfolioCount: {
+            $size: {
+              $filter: {
+                input: "$userOrders",
+                as: "o",
+                cond: { $eq: ["$$o.serviceType", "portfolio_design"] }
+              }
+            }
+          },
+          totalOrders: { $size: "$userOrders" }
+        }
+      }
+    ]);
+
+    // Generate CSV
+    const headers = [
+      'Telegram ID',
+      'Username',
+      'Full Name',
+      'Phone',
+      'Balance (Points)',
+      'CV Design Orders',
+      'Similarity Orders',
+      'Portfolio Orders',
+      'Total Orders',
+      'Joined At'
+    ];
+
+    const escapeField = (val) => {
+      if (val === null || val === undefined) return '';
+      const str = String(val).replace(/"/g, '""');
+      if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+        return `"${str}"`;
+      }
+      return str;
+    };
+
+    const rows = reportData.map(item => {
+      const fullName = (item.firstName || item.lastName)
+        ? `${item.firstName || ''} ${item.lastName || ''}`.trim()
+        : 'N/A';
+      return [
+        escapeField(item.telegramId),
+        escapeField(item.username || 'N/A'),
+        escapeField(fullName),
+        escapeField(item.phone),
+        item.balance,
+        item.cvCount,
+        item.similarityCount,
+        item.portfolioCount,
+        item.totalOrders,
+        escapeField(item.joinedAt ? item.joinedAt.toISOString() : '')
+      ].join(',');
+    });
+
+    // Add UTF-8 BOM (\ufeff) to support Arabic characters in Excel
+    const csvContent = '\ufeff' + [headers.join(','), ...rows].join('\n');
+
+    // Send file as document
+    await ctx.replyWithDocument({
+      source: Buffer.from(csvContent, 'utf-8'),
+      filename: `SaveTimePro_Report_${new Date().toISOString().split('T')[0]}.csv`
+    }, {
+      caption: '📊 <b>تقرير المستخدمين والمبيعات الحالي جاهز للإكسل!</b>\nتم تجميع البيانات وربط أرقام الهواتف والطلبات بنجاح.',
+      parse_mode: 'HTML'
+    });
+
+    // Delete status message
+    await ctx.telegram.deleteMessage(ctx.chat.id, statusMsg.message_id).catch(() => {});
+
+  } catch (error) {
+    console.error('Export command error:', error);
+    await ctx.reply('⚠️ حدث خطأ أثناء تجميع البيانات وتصدير الملف.');
+  }
+};
+
+bot.command('export', handleExport);
+bot.command('export_data', handleExport);
+
 // Admin Command: /userinfo <telegramId_or_@username>
 bot.command('userinfo', async (ctx) => {
   const isAdmin = await checkAdmin(ctx);
@@ -586,6 +727,7 @@ bot.command('adminhelp', async (ctx) => {
     `الأوامر المتاحة للإدارة:\n\n` +
     `📊 <b>الإحصائيات والتقارير:</b>\n` +
     `• /stats — عرض إحصائيات البوت والأرباح اليومية والكلية.\n` +
+    `• /export — تصدير تقرير إكسل (CSV) للمستخدمين والمبيعات.\n` +
     `• /userinfo &lt;telegramId_أو_@اسم_المستخدم&gt; — عرض بيانات شحن مستخدم وتفاصيل حسابه.\n\n` +
     `🎟️ <b>إدارة الأكواد الترويجية:</b>\n` +
     `• /addpromo &lt;الكود&gt; &lt;النقاط&gt; &lt;أقصى_استخدامات&gt; — إنشاء كود هدية جديد.\n` +
@@ -666,6 +808,7 @@ bot.hears('🛠️ مساعدة المسؤول', async (ctx) => {
     `الأوامر المتاحة للإدارة:\n\n` +
     `📊 <b>الإحصائيات والتقارير:</b>\n` +
     `• /stats — عرض إحصائيات البوت والأرباح اليومية والكلية.\n` +
+    `• /export — تصدير تقرير إكسل (CSV) للمستخدمين والمبيعات.\n` +
     `• /userinfo &lt;telegramId_أو_@اسم_المستخدم&gt; — عرض بيانات شحن مستخدم وتفاصيل حسابه.\n\n` +
     `🎟️ <b>إدارة الأكواد الترويجية:</b>\n` +
     `• /addpromo &lt;الكود&gt; &lt;النقاط&gt; &lt;أقصى_استخدامات&gt; — إنشاء كود هدية جديد.\n` +
