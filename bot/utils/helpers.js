@@ -123,10 +123,23 @@ const getPromosHTML = async () => {
   return promoListMsg;
 };
 
+/**
+ * Normalizes Arabic/Persian numerals into Western/Latin digits.
+ * @param {string} str 
+ * @returns {string}
+ */
+const normalizeDigits = (str) => {
+  if (!str) return '';
+  return str
+    .replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
+    .replace(/[۰-۹]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
+};
+
 module.exports = {
   escapeHTML,
   isUserAdmin,
   checkAdmin,
   getStatsHTML,
-  getPromosHTML
+  getPromosHTML,
+  normalizeDigits
 };

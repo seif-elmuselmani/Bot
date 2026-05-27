@@ -76,7 +76,8 @@ const registerUserCommands = (bot) => {
             [{ text: '📄 إنشاء سيرة ATS جديدة (150 نقطة)', callback_data: 'service_design_create_cv' }],
             [{ text: '✏️ تعديل سيرة ATS الحالية (50 نقطة)', callback_data: 'service_design_edit_cv' }],
             [{ text: '💼 إنشاء بورتفوليو (300 نقطة)', callback_data: 'service_design_create_portfolio' }],
-            [{ text: '🛠️ تعديل البورتفوليو الحالي (100 نقطة)', callback_data: 'service_design_edit_portfolio' }]
+            [{ text: '🛠️ تعديل البورتفوليو الحالي (100 نقطة)', callback_data: 'service_design_edit_portfolio' }],
+            [{ text: 'ℹ️ تفاصيل واستفسار عن الخدمات', callback_data: 'services_info' }]
           ]
         }
       });
@@ -146,6 +147,73 @@ const registerUserCommands = (bot) => {
     } catch (error) {
       console.error('Error handling service callback:', error);
       await ctx.answerCbQuery('⚠️ حدث خطأ أثناء معالجة الطلب.', { show_alert: true });
+    }
+  });
+
+  // Services Inquiry Details Callback
+  bot.action('services_info', async (ctx) => {
+    try {
+      const infoMessage =
+        `ℹ️ <b>دليل وتفاصيل خدمات SaveTimePro</b>\n\n` +
+        `• <b>📊 تقرير التشابه العلمي:</b>\n` +
+        `  - <b>ما هي الخدمة؟</b> فحص نسبة الاقتباس (السرقة الأدبية) في الأبحاث والمقالات العلمية.\n` +
+        `  - <b>ماذا تستلم؟</b> تقرير PDF مفصل يوضح النسبة ومصادر الاقتباس بدقة.\n` +
+        `  - <b>التكلفة:</b> 60 نقطة.\n\n` +
+        `• <b>🤖 تقرير فحص الذكاء الاصطناعي:</b>\n` +
+        `  - <b>ما هي الخدمة؟</b> فحص النصوص لتحديد نسبة الكتابة بالذكاء الاصطناعي (مثل ChatGPT).\n` +
+        `  - <b>ماذا تستلم؟</b> تقرير PDF يوضح الجمل المكتوبة بالذكاء الاصطناعي.\n` +
+        `  - <b>التكلفة:</b> 50 نقطة.\n\n` +
+        `• <b>📄 سيرة ذاتية ATS:</b>\n` +
+        `  - <b>ما هي الخدمة؟</b> تصميم سيرة ذاتية متوافقة مع أنظمة الفرز الآلي للتوظيف (ATS).\n` +
+        `  - <b>ماذا تستلم؟</b> سيرة ذاتية احترافية بصيغة PDF وملف Word قابل للتعديل.\n` +
+        `  - <b>التكلفة:</b> إنشاء سيرة جديدة (150 نقطة) / تعديل سيرة حالية (50 نقطة).\n\n` +
+        `• <b>💼 بورتفوليو مهني:</b>\n` +
+        `  - <b>ما هي الخدمة؟</b> تصميم معرض أعمال احترافي وجذاب لعرض خبراتك ومشاريعك.\n` +
+        `  - <b>ماذا تستلم؟</b> ملف بورتفوليو مصمم بألوان متناسقة بصيغة PDF تفاعلية.\n` +
+        `  - <b>التكلفة:</b> إنشاء بورتفوليو جديد (300 نقطة) / تعديل بورتفوليو حالي (100 نقطة).\n\n` +
+        `⏱️ <b>الوقت المتوقع للتسليم:</b> من 10 إلى 15 دقيقة فقط!`;
+
+      await ctx.editMessageText(infoMessage, {
+        parse_mode: 'HTML',
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '⬅️ العودة لقائمة الخدمات', callback_data: 'services_back' }]
+          ]
+        }
+      });
+      await ctx.answerCbQuery();
+    } catch (error) {
+      console.error('Error showing services info:', error);
+      await ctx.answerCbQuery('⚠️ حدث خطأ أثناء عرض التفاصيل.', { show_alert: true });
+    }
+  });
+
+  // Services Back Callback
+  bot.action('services_back', async (ctx) => {
+    try {
+      const servicesMessage =
+        `📂 <b>قائمة خدمات SaveTimePro المتاحة</b>\n\n` +
+        `اختر الخدمة المطلوبة من القائمة أدناه. سيتم فحص رصيدك أولاً ثم مطالبتك برفع الملفات المطلوبة.\n\n` +
+        `💳 <b>اختر الخدمة للمتابعة:</b>`;
+
+      await ctx.editMessageText(servicesMessage, {
+        parse_mode: 'HTML',
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '📊 تقرير التشابه العلمي (60 نقطة)', callback_data: 'service_similarity_60' }],
+            [{ text: '🤖 تقرير فحص الذكاء الاصطناعي (50 نقطة)', callback_data: 'service_ai_50' }],
+            [{ text: '📄 إنشاء سيرة ATS جديدة (150 نقطة)', callback_data: 'service_design_create_cv' }],
+            [{ text: '✏️ تعديل سيرة ATS الحالية (50 نقطة)', callback_data: 'service_design_edit_cv' }],
+            [{ text: '💼 إنشاء بورتفوليو (300 نقطة)', callback_data: 'service_design_create_portfolio' }],
+            [{ text: '🛠️ تعديل البورتفوليو الحالي (100 نقطة)', callback_data: 'service_design_edit_portfolio' }],
+            [{ text: 'ℹ️ تفاصيل واستفسار عن الخدمات', callback_data: 'services_info' }]
+          ]
+        }
+      });
+      await ctx.answerCbQuery();
+    } catch (error) {
+      console.error('Error going back to services menu:', error);
+      await ctx.answerCbQuery('⚠️ حدث خطأ أثناء العودة.', { show_alert: true });
     }
   });
 
