@@ -174,6 +174,13 @@ const COOLDOWN_MS = 1000; // 1-second delay between user interactions
 
 bot.use(async (ctx, next) => {
   if (!ctx.from) return next();
+
+  // Skip rate limiting for messages in the Admin Group (to allow fast approvals & deliveries)
+  const adminGroupId = process.env.ADMIN_GROUP_ID;
+  if (ctx.chat && adminGroupId && ctx.chat.id.toString() === adminGroupId.toString()) {
+    return next();
+  }
+
   const userId = ctx.from.id.toString();
   const now = Date.now();
 

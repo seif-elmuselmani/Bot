@@ -241,24 +241,6 @@ const designWizard = new WizardScene(
       const randomDigits = Math.floor(1000 + Math.random() * 9000);
       const orderId = `ORD-${dateString}-${randomDigits}`;
 
-      // 3. Deduct balance from user
-      user.balance -= price;
-      await user.save();
-      console.log(`Deducted ${price} points for ${serviceName} from ${userId}. Balance: ${user.balance}`);
-
-      // 4. Record order in database
-      const order = new Order({
-        orderId,
-        telegramId: userId,
-        serviceType,
-        price,
-        fileId: referenceFileId,
-        textInput: `Service Name: ${serviceName} | Notes: ${notes}`,
-        status: 'in_progress',
-      });
-      await order.save();
-
-      // 5. Send order notification and document to Admin Group
       const adminGroupId = process.env.ADMIN_GROUP_ID;
       if (!adminGroupId) {
         throw new Error('ADMIN_GROUP_ID environment variable is missing.');
@@ -275,14 +257,28 @@ const designWizard = new WizardScene(
         `• <b>الملاحظات والتعليمات:</b> <i>${escapeHTML(notes)}</i>\n\n` +
         `📥 <b>الإجراء المطلوب:</b> قم بالرد على رسالة هذا الملف بملفات التصميم المكتملة ليتم إرسالها للمستخدم وتغيير حالة الطلب تلقائياً.`;
 
-      // Dispatch document to Admin Group
+      // 3. Dispatch document to Admin Group first
       const adminSentMessage = await ctx.telegram.sendDocument(adminGroupId, referenceFileId, {
         caption: adminCaption,
         parse_mode: 'HTML',
       });
 
-      // Save admin message reference for tracking replies
-      order.adminMessageId = adminSentMessage.message_id;
+      // 4. Deduct balance from user
+      user.balance -= price;
+      await user.save();
+      console.log(`Deducted ${price} points for ${serviceName} from ${userId}. Balance: ${user.balance}`);
+
+      // 5. Record order in database (single write)
+      const order = new Order({
+        orderId,
+        telegramId: userId,
+        serviceType,
+        price,
+        fileId: referenceFileId,
+        textInput: `Service Name: ${serviceName} | Notes: ${notes}`,
+        status: 'in_progress',
+        adminMessageId: adminSentMessage.message_id
+      });
       await order.save();
 
       // 6. Notify user and re-attach main menu
@@ -312,7 +308,7 @@ const designWizard = new WizardScene(
 
     } catch (error) {
       console.error('Design Wizard Refactored Submission Error:', error);
-      await ctx.reply('⚠️ حدث خطأ غير متوقع أثناء حفظ طلب التصميم. يرجى التواصل مع الدعم الفني.');
+      await ctx.reply('⚠️ حدث خطأ أثناء إرسال طلب التصميم للإدارة. لم يتم خصم أي نقاط من رصيدك. يرجى المحاولة مرة أخرى أو التواصل مع الدعم الفني.');
     }
 
     return ctx.scene.leave();

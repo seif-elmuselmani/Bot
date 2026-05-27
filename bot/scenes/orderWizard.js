@@ -188,30 +188,12 @@ const orderWizard = new WizardScene(
       const randomDigits = Math.floor(1000 + Math.random() * 9000);
       const orderId = `ORD-${dateString}-${randomDigits}`;
 
-      // 3. Deduct points from user's balance
-      user.balance -= price;
-      await user.save();
-      console.log(`Deducted ${price} points from user ${userId}. New balance: ${user.balance}`);
-
-      // 4. Create new Order in MongoDB
-      const order = new Order({
-        orderId,
-        telegramId: userId,
-        serviceType,
-        price,
-        fileId,
-        status: 'in_progress',
-      });
-      await order.save();
-
-      // 5. Send order notification and document to Admin Group
       const adminGroupId = process.env.ADMIN_GROUP_ID;
       if (!adminGroupId) {
         throw new Error('ADMIN_GROUP_ID environment variable is missing.');
       }
 
       const formattedService = serviceType.replace(/_/g, ' ').toUpperCase();
-
       const adminCaption = 
         `📥 <b>طلب مستند أكاديمي جديد</b>\n\n` +
         `• <b>رقم الطلب:</b> <code>${escapeHTML(orderId)}</code>\n` +
@@ -221,14 +203,27 @@ const orderWizard = new WizardScene(
         `• <b>التكلفة المخصومة:</b> <code>${price} نقطة</code>\n\n` +
         `📥 <b>الإجراء المطلوب:</b> يرجى الرد على رسالة هذا الملف بملف النتيجة المكتمل ليتم تسليمه للمستخدم تلقائياً.`;
 
-      // Send the document directly to the Admin Group
+      // 3. Send the document directly to the Admin Group first
       const adminSentMessage = await ctx.telegram.sendDocument(adminGroupId, fileId, {
         caption: adminCaption,
         parse_mode: 'HTML',
       });
 
-      // Save admin message ID to Order for tracking replies
-      order.adminMessageId = adminSentMessage.message_id;
+      // 4. If Telegram upload succeeded, deduct points from user's balance
+      user.balance -= price;
+      await user.save();
+      console.log(`Deducted ${price} points from user ${userId}. New balance: ${user.balance}`);
+
+      // 5. Create and save the new Order in MongoDB (single write)
+      const order = new Order({
+        orderId,
+        telegramId: userId,
+        serviceType,
+        price,
+        fileId,
+        status: 'in_progress',
+        adminMessageId: adminSentMessage.message_id
+      });
       await order.save();
 
       // 6. Notify user and re-attach main menu
@@ -257,7 +252,7 @@ const orderWizard = new WizardScene(
 
     } catch (error) {
       console.error('Order Wizard Submission Error:', error);
-      await ctx.reply('⚠️ حدث خطأ غير متوقع أثناء حفظ طلب الخدمة. يرجى التواصل مع الدعم الفني.');
+      await ctx.reply('⚠️ حدث خطأ أثناء إرسال طلب الخدمة للإدارة. لم يتم خصم أي نقاط من رصيدك. يرجى المحاولة مرة أخرى أو التواصل مع الدعم الفني.');
     }
 
     return ctx.scene.leave();

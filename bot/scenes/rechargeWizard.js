@@ -220,8 +220,8 @@ const rechargeWizard = new WizardScene(
       const keyboardMarkup = {
         inline_keyboard: [
           [
-            { text: '✅ موافقة', callback_data: `approve_deposit_${userId}_${amount}` },
-            { text: '❌ رفض', callback_data: `reject_deposit_${userId}` }
+            { text: '✅ موافقة', callback_data: `approve_dep_${depositId}` },
+            { text: '❌ رفض', callback_data: `reject_dep_${depositId}` }
           ]
         ]
       };

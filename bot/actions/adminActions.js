@@ -20,13 +20,26 @@ const escapeHTML = (text) => {
  */
 const registerAdminActions = (bot) => {
   
-  // Handle Approval: approve_deposit_{userId}_{amount}
-  bot.action(/^approve_deposit_(\d+)_([\d.]+)$/, async (ctx) => {
-    const userId = ctx.match[1];
-    const amount = parseFloat(ctx.match[2]);
+  // Handle Approval: approve_dep_{depositId}
+  bot.action(/^approve_dep_(DEP-\d+-\d+)$/, async (ctx) => {
+    const depositId = ctx.match[1];
 
     try {
-      // 1. Credit the user's balance in MongoDB
+      // 1. Lock and update deposit status first to avoid double-spend
+      const deposit = await Deposit.findOneAndUpdate(
+        { depositId, status: 'pending' },
+        { status: 'approved' },
+        { new: false } // Returns the old document (with status: 'pending')
+      );
+
+      if (!deposit) {
+        return ctx.answerCbQuery('⚠️ هذا الطلب تم معالجته بالفعل أو غير موجود.', { show_alert: true });
+      }
+
+      const userId = deposit.telegramId;
+      const amount = deposit.amount;
+
+      // 2. Credit the user's balance in MongoDB
       const user = await User.findOneAndUpdate(
         { telegramId: userId },
         { $inc: { balance: amount } },
@@ -34,15 +47,10 @@ const registerAdminActions = (bot) => {
       );
 
       if (!user) {
+        // Rollback deposit status if user doesn't exist
+        await Deposit.findOneAndUpdate({ depositId }, { status: 'pending' });
         return ctx.answerCbQuery('❌ خطأ: لم يتم العثور على المستخدم في قاعدة البيانات.', { show_alert: true });
       }
-
-      // 2. Mark the corresponding pending deposit in DB as approved
-      await Deposit.findOneAndUpdate(
-        { telegramId: userId, status: 'pending', amount: amount },
-        { status: 'approved' },
-        { sort: { createdAt: -1 } } // Update the most recent one
-      );
 
       // 3. Notify the user in their private chat
       try {
@@ -110,19 +118,24 @@ const registerAdminActions = (bot) => {
     }
   });
 
-  // Handle Rejection: reject_deposit_{userId}
-  bot.action(/^reject_deposit_(\d+)$/, async (ctx) => {
-    const userId = ctx.match[1];
+  // Handle Rejection: reject_dep_{depositId}
+  bot.action(/^reject_dep_(DEP-\d+-\d+)$/, async (ctx) => {
+    const depositId = ctx.match[1];
 
     try {
-      // 1. Mark the latest pending deposit for this user as rejected
+      // 1. Mark the pending deposit as rejected
       const deposit = await Deposit.findOneAndUpdate(
-        { telegramId: userId, status: 'pending' },
+        { depositId, status: 'pending' },
         { status: 'rejected' },
-        { sort: { createdAt: -1 } }
+        { new: false }
       );
 
-      const amountStr = deposit ? `${deposit.amount} نقطة` : 'شحن المحفظة';
+      if (!deposit) {
+        return ctx.answerCbQuery('⚠️ هذا الطلب تم معالجته بالفعل أو غير موجود.', { show_alert: true });
+      }
+
+      const userId = deposit.telegramId;
+      const amountStr = `${deposit.amount} نقطة`;
 
       // 2. Notify the user of the rejection
       try {
