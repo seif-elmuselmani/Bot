@@ -41,6 +41,15 @@ const UserSchema = new mongoose.Schema(
       default: false,
       index: true,
     },
+    referredBy: {
+      type: String,
+      default: null,
+    },
+    referralRewardClaimed: {
+      type: Boolean,
+      required: true,
+      default: false,
+    },
   },
   {
     timestamps: true, // Automatically manages createdAt and updatedAt

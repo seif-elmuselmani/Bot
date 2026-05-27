@@ -57,6 +57,43 @@ const registerAdminActions = (bot) => {
         console.error(`Notification failed for user ${userId}:`, notifyErr.message);
       }
 
+      // REFERRAL BONUS CHECK:
+      // Check if user was referred by someone AND has NOT claimed the reward yet AND this deposit is >= 300 points (EGP)
+      if (user.referredBy && !user.referralRewardClaimed && amount >= 300) {
+        try {
+          const referrerId = user.referredBy;
+          
+          // Credit 25 points to the referrer
+          const referrer = await User.findOneAndUpdate(
+            { telegramId: referrerId },
+            { $inc: { balance: 25 } },
+            { new: true }
+          );
+
+          if (referrer) {
+            // Mark the referral reward as claimed/processed for this referred user
+            user.referralRewardClaimed = true;
+            await user.save();
+
+            // Notify the referrer in private chat
+            try {
+              await ctx.telegram.sendMessage(
+                referrerId,
+                `🎉 <b>هدية دعوتك لصديق!</b> 🎉\n\n` +
+                `قام صديقك المدعو بشحن رصيد بقيمة <code>${amount} نقطة</code> (أكثر من الحد الأدنى 300 نقطة).\n` +
+                `🎁 تم إضافة <b>+25 نقطة</b> هدية إحالة إلى محفظتك!\n` +
+                `• <b>رصيدك الجديد:</b> <code>${referrer.balance} نقطة</code>`,
+                { parse_mode: 'HTML' }
+              );
+            } catch (notifyErr) {
+              console.error(`Failed to send referral notification to referrer ${referrerId}:`, notifyErr.message);
+            }
+          }
+        } catch (refErr) {
+          console.error('Referral award process failed:', refErr);
+        }
+      }
+
       // 4. Update the message in the Admin Group (remove keyboard, append status)
       const cleanCaption = escapeHTML(ctx.callbackQuery.message.caption || '');
       await ctx.editMessageCaption(

@@ -1470,11 +1470,18 @@ const showUserProfile = async (ctx) => {
       day: 'numeric'
     });
 
+    const botInfo = await ctx.telegram.getMe();
+    const refLink = `https://t.me/${botInfo.username}?start=ref_${user.telegramId}`;
+
     const profileMessage = 
       `👤 <b>بيانات الحساب الشخصي</b>\n\n` +
       `• <b>معرّف الحساب (ID):</b> <code>${user.telegramId}</code>\n` +
       `• <b>رصيد النقاط الحالي:</b> <code>${user.balance} نقطة</code>\n` +
-      `• <b>تاريخ التسجيل في البوت:</b> <code>${formattedDate}</code>`;
+      `• <b>تاريخ التسجيل في البوت:</b> <code>${formattedDate}</code>\n\n` +
+      `🔗 <b>رابط الإحالة ومشاركة البوت:</b>\n` +
+      `<code>${refLink}</code>\n\n` +
+      `🎁 <b>ادعُ أصدقاءك واكسب نقاط مجانية!</b>\n` +
+      `شارك الرابط الخاص بك مع أصدقائك في الجامعة. ستحصل على <b>+25 نقطة مجانية</b> في محفظتك فور قيام أي صديق يسجل عن طريق رابطك بشحن رصيد بقيمة <b>300 جنيه (أو أكثر)</b> للمرة الأولى!`;
 
     await ctx.replyWithHTML(profileMessage);
   } catch (error) {
@@ -1626,6 +1633,21 @@ bot.start(async (ctx) => {
     let user = await User.findOne({ telegramId });
 
     if (!user) {
+      // Check for deep-linking referral parameter
+      let referredBy = null;
+      const startPayload = ctx.payload; // Deep linking parameter
+      if (startPayload && startPayload.startsWith('ref_')) {
+        const referrerId = startPayload.substring(4);
+        if (referrerId !== telegramId) {
+          // Verify referrer exists in DB
+          const referrerExists = await User.findOne({ telegramId: referrerId });
+          if (referrerExists) {
+            referredBy = referrerId;
+            console.log(`User ${telegramId} was referred by ${referrerId}`);
+          }
+        }
+      }
+
       user = new User({
         telegramId,
         username,
@@ -1633,9 +1655,25 @@ bot.start(async (ctx) => {
         lastName,
         balance: 0,
         isBanned: false,
+        referredBy,
+        referralRewardClaimed: false
       });
       await user.save();
       console.log(`New User registered: ${username || telegramId}`);
+
+      // Notify the referrer of the registration (social proof)
+      if (referredBy) {
+        try {
+          await ctx.telegram.sendMessage(
+            referredBy,
+            `👤 <b>سجل صديق جديد عن طريق رابط الإحالة الخاص بك!</b>\n\n` +
+            `ستحصل على الهدية <b>(25 نقطة)</b> فور قيام صديقك بشحن رصيد بمبلغ <b>300 جنيه أو أكثر</b> للمرة الأولى. 📈`,
+            { parse_mode: 'HTML' }
+          );
+        } catch (err) {
+          console.error(`Failed to notify referrer ${referredBy} of registration:`, err.message);
+        }
+      }
     } else {
       // Update names and username if changed
       user.username = username;
