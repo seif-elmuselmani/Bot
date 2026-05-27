@@ -186,6 +186,9 @@ const registerUserCommands = (bot) => {
       );
 
       if (!user) {
+        // Rollback: remove user from usedBy list since registration is missing
+        promo.usedBy.pull(telegramId);
+        await promo.save();
         return ctx.reply('❌ خطأ في النظام. يرجى إرسال /start لتسجيل حسابك أولاً.');
       }
 
