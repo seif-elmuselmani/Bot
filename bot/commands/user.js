@@ -87,6 +87,60 @@ const registerUserCommands = (bot) => {
     }
   };
 
+  bot.action('services_info', async (ctx) => {
+    try {
+      await ctx.answerCbQuery();
+      const infoMessage =
+        `ℹ️ <b>تفاصيل واستفسار عن خدمات SaveTimePro</b>\n\n` +
+        `• <b>تقرير التشابه العلمي (60 نقطة):</b> فحص نسبة الاقتباس (Plagiarism) وتحديد المصادر.\n` +
+        `• <b>تقرير فحص الذكاء الاصطناعي (50 نقطة):</b> الكشف عن المحتوى المولد بواسطة AI ونسبته.\n` +
+        `• <b>إنشاء سيرة ATS جديدة (150 نقطة):</b> تصميم سي دي مهني متوافق مع أنظمة الفرز الآلي.\n` +
+        `• <b>تعديل سيرة ATS الحالية (50 نقطة):</b> مراجعة وتحسين سيرتك الذاتية الحالية لتتوافق مع ATS.\n` +
+        `• <b>إنشاء بورتفوليو (300 نقطة):</b> تصميم معرض أعمال متكامل وجذاب لعرض مشاريعك.\n` +
+        `• <b>تعديل البورتفوليو الحالي (100 نقطة):</b> تحديث وتطوير بورتفوليو قائم وتعديل تصميمه.\n\n` +
+        `💼 لدينا أيضاً خدمات مخصصة لتقليل الاقتباس، وإعادة الصياغة، وتقليل نسبة الـ AI. للاستفسار والطلب الخاص تواصل مع الدعم الفني مباشرة.\n\n` +
+        `💬 <b>حساب الدعم الفني (واتساب):</b> <a href="https://wa.me/201223817860">+201223817860</a>`;
+
+      await ctx.editMessageText(infoMessage, {
+        parse_mode: 'HTML',
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '🔙 العودة لقائمة الخدمات', callback_data: 'services_back' }]
+          ]
+        }
+      });
+    } catch (error) {
+      console.error('Error handling services_info:', error);
+    }
+  });
+
+  bot.action('services_back', async (ctx) => {
+    try {
+      await ctx.answerCbQuery();
+      const servicesMessage =
+        `📂 <b>قائمة خدمات SaveTimePro المتاحة</b>\n\n` +
+        `اختر الخدمة المطلوبة من القائمة أدناه. سيتم فحص رصيدك أولاً ثم مطالبتك برفع الملفات المطلوبة.\n\n` +
+        `💳 <b>اختر الخدمة للمتابعة:</b>`;
+
+      await ctx.editMessageText(servicesMessage, {
+        parse_mode: 'HTML',
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '📊 تقرير التشابه العلمي (60 نقطة)', callback_data: 'service_similarity_60' }],
+            [{ text: '🤖 تقرير فحص الذكاء الاصطناعي (50 نقطة)', callback_data: 'service_ai_50' }],
+            [{ text: '📄 إنشاء سيرة ATS جديدة (150 نقطة)', callback_data: 'service_design_create_cv' }],
+            [{ text: '✏️ تعديل سيرة ATS الحالية (50 نقطة)', callback_data: 'service_design_edit_cv' }],
+            [{ text: '💼 إنشاء بورتفوليو (300 نقطة)', callback_data: 'service_design_create_portfolio' }],
+            [{ text: '🛠️ تعديل البورتفوليو الحالي (100 نقطة)', callback_data: 'service_design_edit_portfolio' }],
+            [{ text: 'ℹ️ تفاصيل واستفسار عن الخدمات', callback_data: 'services_info' }]
+          ]
+        }
+      });
+    } catch (error) {
+      console.error('Error handling services_back:', error);
+    }
+  });
+
   bot.command('services', async (ctx) => {
     if (ctx.chat.type !== 'private') return;
     await showServicesMenu(ctx);
@@ -147,73 +201,6 @@ const registerUserCommands = (bot) => {
     } catch (error) {
       console.error('Error handling service callback:', error);
       await ctx.answerCbQuery('⚠️ حدث خطأ أثناء معالجة الطلب.', { show_alert: true });
-    }
-  });
-
-  // Services Inquiry Details Callback
-  bot.action('services_info', async (ctx) => {
-    try {
-      const infoMessage =
-        `ℹ️ <b>دليل وتفاصيل خدمات SaveTimePro</b>\n\n` +
-        `• <b>📊 تقرير التشابه العلمي:</b>\n` +
-        `  - <b>ما هي الخدمة؟</b> فحص نسبة الاقتباس (السرقة الأدبية) في الأبحاث والمقالات العلمية.\n` +
-        `  - <b>ماذا تستلم؟</b> تقرير PDF مفصل يوضح النسبة ومصادر الاقتباس بدقة.\n` +
-        `  - <b>التكلفة:</b> 60 نقطة.\n\n` +
-        `• <b>🤖 تقرير فحص الذكاء الاصطناعي:</b>\n` +
-        `  - <b>ما هي الخدمة؟</b> فحص النصوص لتحديد نسبة الكتابة بالذكاء الاصطناعي (مثل ChatGPT).\n` +
-        `  - <b>ماذا تستلم؟</b> تقرير PDF يوضح الجمل المكتوبة بالذكاء الاصطناعي.\n` +
-        `  - <b>التكلفة:</b> 50 نقطة.\n\n` +
-        `• <b>📄 سيرة ذاتية ATS:</b>\n` +
-        `  - <b>ما هي الخدمة؟</b> تصميم سيرة ذاتية متوافقة مع أنظمة الفرز الآلي للتوظيف (ATS).\n` +
-        `  - <b>ماذا تستلم؟</b> سيرة ذاتية احترافية بصيغة PDF وملف Word قابل للتعديل.\n` +
-        `  - <b>التكلفة:</b> إنشاء سيرة جديدة (150 نقطة) / تعديل سيرة حالية (50 نقطة).\n\n` +
-        `• <b>💼 بورتفوليو مهني:</b>\n` +
-        `  - <b>ما هي الخدمة؟</b> تصميم معرض أعمال احترافي وجذاب لعرض خبراتك ومشاريعك.\n` +
-        `  - <b>ماذا تستلم؟</b> ملف بورتفوليو مصمم بألوان متناسقة بصيغة PDF تفاعلية.\n` +
-        `  - <b>التكلفة:</b> إنشاء بورتفوليو جديد (300 نقطة) / تعديل بورتفوليو حالي (100 نقطة).\n\n` +
-        `⏱️ <b>الوقت المتوقع للتسليم:</b> من 10 إلى 15 دقيقة فقط!`;
-
-      await ctx.editMessageText(infoMessage, {
-        parse_mode: 'HTML',
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: '⬅️ العودة لقائمة الخدمات', callback_data: 'services_back' }]
-          ]
-        }
-      });
-      await ctx.answerCbQuery();
-    } catch (error) {
-      console.error('Error showing services info:', error);
-      await ctx.answerCbQuery('⚠️ حدث خطأ أثناء عرض التفاصيل.', { show_alert: true });
-    }
-  });
-
-  // Services Back Callback
-  bot.action('services_back', async (ctx) => {
-    try {
-      const servicesMessage =
-        `📂 <b>قائمة خدمات SaveTimePro المتاحة</b>\n\n` +
-        `اختر الخدمة المطلوبة من القائمة أدناه. سيتم فحص رصيدك أولاً ثم مطالبتك برفع الملفات المطلوبة.\n\n` +
-        `💳 <b>اختر الخدمة للمتابعة:</b>`;
-
-      await ctx.editMessageText(servicesMessage, {
-        parse_mode: 'HTML',
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: '📊 تقرير التشابه العلمي (60 نقطة)', callback_data: 'service_similarity_60' }],
-            [{ text: '🤖 تقرير فحص الذكاء الاصطناعي (50 نقطة)', callback_data: 'service_ai_50' }],
-            [{ text: '📄 إنشاء سيرة ATS جديدة (150 نقطة)', callback_data: 'service_design_create_cv' }],
-            [{ text: '✏️ تعديل سيرة ATS الحالية (50 نقطة)', callback_data: 'service_design_edit_cv' }],
-            [{ text: '💼 إنشاء بورتفوليو (300 نقطة)', callback_data: 'service_design_create_portfolio' }],
-            [{ text: '🛠️ تعديل البورتفوليو الحالي (100 نقطة)', callback_data: 'service_design_edit_portfolio' }],
-            [{ text: 'ℹ️ تفاصيل واستفسار عن الخدمات', callback_data: 'services_info' }]
-          ]
-        }
-      });
-      await ctx.answerCbQuery();
-    } catch (error) {
-      console.error('Error going back to services menu:', error);
-      await ctx.answerCbQuery('⚠️ حدث خطأ أثناء العودة.', { show_alert: true });
     }
   });
 

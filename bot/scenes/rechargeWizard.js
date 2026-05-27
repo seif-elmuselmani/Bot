@@ -5,8 +5,8 @@
  */
 
 const { Scenes: { WizardScene } } = require('telegraf');
-const Deposit = require('../../models/Deposit');
 const { normalizeDigits } = require('../utils/helpers');
+const Deposit = require('../../models/Deposit');
 
 // Helper to escape HTML characters for Telegram HTML formatting
 const escapeHTML = (str) => {
@@ -81,7 +81,8 @@ const rechargeWizard = new WizardScene(
     if (await checkCancelOrCommand(ctx, next)) return;
 
     const text = ctx.message?.text?.trim();
-    const amount = parseFloat(normalizeDigits(text));
+    const normalizedText = normalizeDigits(text);
+    const amount = parseFloat(normalizedText);
     if (isNaN(amount) || amount <= 0) {
       await ctx.reply('❌ قيمة غير صالحة. من فضلك أدخل رقماً صحيحاً أكبر من صفر (مثال: 150):', {
         reply_markup: {
@@ -163,11 +164,11 @@ const rechargeWizard = new WizardScene(
     if (await checkCancelOrCommand(ctx, next)) return;
 
     const text = ctx.message?.text?.trim();
-    const phone = normalizeDigits(text);
+    const normalizedPhone = normalizeDigits(text);
 
     // Validate 11-digit number
     const phoneRegex = /^\d{11}$/;
-    if (!phone || !phoneRegex.test(phone)) {
+    if (!normalizedPhone || !phoneRegex.test(normalizedPhone)) {
       await ctx.reply('❌ رقم الهاتف غير صالح. من فضلك أدخل رقم هاتف مكون من 11 رقماً (مثال: 01012345678):', {
         reply_markup: {
           keyboard: [
@@ -179,6 +180,8 @@ const rechargeWizard = new WizardScene(
       });
       return; // Do not advance; wait for correct input
     }
+
+    const phone = normalizedPhone;
     const amount = ctx.wizard.state.amount;
     const receiptFileId = ctx.wizard.state.receiptFileId;
     const isPhoto = ctx.wizard.state.isPhoto !== false;

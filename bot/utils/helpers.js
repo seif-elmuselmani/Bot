@@ -124,15 +124,21 @@ const getPromosHTML = async () => {
 };
 
 /**
- * Normalizes Arabic/Persian numerals into Western/Latin digits.
+ * Normalizes Eastern Arabic and Persian numerals to Western Arabic numerals (e.g. ١٢٣ -> 123)
  * @param {string} str 
  * @returns {string}
  */
 const normalizeDigits = (str) => {
   if (!str) return '';
-  return str
-    .replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
-    .replace(/[۰-۹]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
+  const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+  const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+  
+  let normalized = str.toString();
+  for (let i = 0; i < 10; i++) {
+    normalized = normalized.replace(new RegExp(arabicDigits[i], 'g'), i);
+    normalized = normalized.replace(new RegExp(persianDigits[i], 'g'), i);
+  }
+  return normalized;
 };
 
 module.exports = {
