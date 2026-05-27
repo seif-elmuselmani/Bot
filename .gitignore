@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+
+# Environment variables - NEVER upload this
+.env
+
+# PM2 logs
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Windows batch scripts (local only)
+start-bot.bat
