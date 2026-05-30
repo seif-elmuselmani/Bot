@@ -10,6 +10,7 @@
  */
 
 const Order = require('../../models/Order');
+const { escapeHTML } = require('../utils/helpers');
 
 // Helper: extract Order ID from a message caption or text
 const extractOrderId = (text) => {
@@ -124,7 +125,7 @@ const setupAdminDelivery = (bot) => {
         `📩 <b>رسالة من الإدارة بخصوص طلبك:</b>\n\n` +
         `• <b>رقم الطلب:</b> <code>${orderId}</code>\n` +
         `• <b>نوع الخدمة:</b> <code>${serviceLabel}</code>\n\n` +
-        `💬 <b>رسالة الإدارة:</b>\n${adminNote}\n\n` +
+        `💬 <b>رسالة الإدارة:</b>\n${escapeHTML(adminNote)}\n\n` +
         `─────────────────\n` +
         `↩️ <b>للإعادة والتصحيح:</b>\n` +
         `اضغط على زر <b>📂 الخدمات</b> من القائمة بالأسفل واختر الخدمة مرة أخرى لإرسال الملف الصحيح.`,

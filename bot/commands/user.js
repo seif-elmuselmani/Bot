@@ -359,22 +359,35 @@ const registerUserCommands = (bot) => {
     const telegramId = ctx.from.id.toString();
 
     try {
-      const promo = await PromoCode.findOne({ code: promoCodeInput });
+      // 1. Try to atomically claim a slot for this user
+      const promo = await PromoCode.findOneAndUpdate(
+        {
+          code: promoCodeInput,
+          usedBy: { $ne: telegramId },
+          $expr: { $lt: [{ $size: '$usedBy' }, '$maxUses'] }
+        },
+        {
+          $push: { usedBy: telegramId }
+        },
+        { new: true }
+      );
+
+      // If claiming failed, find out why to give precise feedback
       if (!promo) {
-        return ctx.reply('❌ كود ترويجي غير صالح. يرجى التأكد وإعادة المحاولة.');
+        const existingPromo = await PromoCode.findOne({ code: promoCodeInput });
+        if (!existingPromo) {
+          return ctx.reply('❌ كود ترويجي غير صالح. يرجى التأكد وإعادة المحاولة.');
+        }
+        if (existingPromo.usedBy.includes(telegramId)) {
+          return ctx.reply('❌ لقد قمت بتفعيل هذا الكود الترويجي مسبقاً لحسابك.');
+        }
+        if (existingPromo.usedBy.length >= existingPromo.maxUses) {
+          return ctx.reply('❌ لقد وصل هذا الكود للحد الأقصى من الاستخدام وانتهت صلاحيته.');
+        }
+        return ctx.reply('❌ تعذر تفعيل الكود حالياً. يرجى المحاولة لاحقاً.');
       }
 
-      if (promo.usedBy.length >= promo.maxUses) {
-        return ctx.reply('❌ لقد وصل هذا الكود للحد الأقصى من الاستخدام وانتهت صلاحيته.');
-      }
-
-      if (promo.usedBy.includes(telegramId)) {
-        return ctx.reply('❌ لقد قمت بتفعيل هذا الكود الترويجي مسبقاً لحسابك.');
-      }
-
-      promo.usedBy.push(telegramId);
-      await promo.save();
-
+      // 2. Add points to user wallet
       const user = await User.findOneAndUpdate(
         { telegramId },
         { $inc: { balance: promo.rewardPoints } },
@@ -382,9 +395,11 @@ const registerUserCommands = (bot) => {
       );
 
       if (!user) {
-        // Rollback: remove user from usedBy list since registration is missing
-        promo.usedBy.pull(telegramId);
-        await promo.save();
+        // Rollback: remove user from usedBy list since user account is missing in DB
+        await PromoCode.findOneAndUpdate(
+          { code: promoCodeInput },
+          { $pull: { usedBy: telegramId } }
+        );
         return ctx.reply('❌ خطأ في النظام. يرجى إرسال /start لتسجيل حسابك أولاً.');
       }
 
