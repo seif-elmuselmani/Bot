@@ -4,8 +4,8 @@
  */
 
 const servicesConfig = {
-  'similarity_report': { type: 'similarity_report', price: 45, name: 'تقرير التشابه العلمي (Similarity)' },
-  'similarity_exclude': { type: 'similarity_exclude_report', price: 45, name: 'تقرير التشابه + استبعاد المراجع' },
+  'similarity_report': { type: 'similarity_report', price: 45, name: 'Similarity Report' },
+  'similarity_exclude': { type: 'similarity_exclude_report', price: 45, name: 'Similarity Report + استبعاد المراجع' },
   'ai_writing': { type: 'ai_writing_report', price: 80, name: 'تقرير فحص الذكاء الاصطناعي (AI)' },
   'both_reports': { type: 'both_reports', price: 90, name: 'كلا التقريرين (تشابه + AI)' },
   'design_create_cv': { type: 'cv_design', price: 150, name: 'إنشاء سيرة ذاتية ATS (من سيرة قديمة)' },

@@ -72,8 +72,8 @@ const registerUserCommands = (bot) => {
       await ctx.replyWithHTML(servicesMessage, {
         reply_markup: {
           inline_keyboard: [
-            [{ text: '📊 تقرير التشابه العلمي - Similarity (45 نقطة)', callback_data: 'service_similarity_report' }],
-            [{ text: '📊 تقرير التشابه + استبعاد المراجع (45 نقطة)', callback_data: 'service_similarity_exclude' }],
+            [{ text: '📊 Similarity Report (45 نقطة)', callback_data: 'service_similarity_report' }],
+            [{ text: '📊 Similarity Report + استبعاد المراجع (45 نقطة)', callback_data: 'service_similarity_exclude' }],
             [{ text: '🤖 تقرير فحص الذكاء الاصطناعي - AI (80 نقطة)', callback_data: 'service_ai_writing' }],
             [{ text: '📦 كلا التقريرين - تشابه + AI (90 نقطة)', callback_data: 'service_both_reports' }],
             [{ text: '📄 إنشاء سيرة ATS جديدة (150 نقطة)', callback_data: 'service_design_create_cv' }],
@@ -96,16 +96,16 @@ const registerUserCommands = (bot) => {
       await ctx.answerCbQuery();
       const infoMessage =
         `ℹ️ <b>دليل وتفاصيل خدمات SaveTimePro المتاحة</b>\n\n` +
-        `• <b>📊 تقرير التشابه العلمي (45 نقطة):</b>\n` +
+        `• <b>📊 Similarity Report (45 نقطة):</b>\n` +
         `  1. ارفع ملف البحث بصيغة PDF أو Word (لا يقل عن 300 كلمة).\n` +
         `  2. ستقوم الإدارة بفحصه وإرسال تقرير الاقتباس المفصل بصيغة PDF خلال 10-15 دقيقة.\n\n` +
-        `• <b>📊 تقرير التشابه + استبعاد المراجع (45 نقطة):</b>\n` +
+        `• <b>📊 Similarity Report + استبعاد المراجع (45 نقطة):</b>\n` +
         `  1. فحص نسبة الاقتباس (Similarity) مع استبعاد صفحة المراجع (Bibliography) للحصول على نسبة أكثر دقة.\n\n` +
         `• <b>🤖 تقرير فحص الذكاء الاصطناعي (80 نقطة):</b>\n` +
         `  1. ارفع الملف بصيغة PDF أو Word ليتم فحصه بالكامل.\n` +
         `  2. ستستلم تقريراً يوضح الجمل المكتوبة بالذكاء الاصطناعي ونسبتها.\n\n` +
         `• <b>📦 كلا التقريرين - تشابه + AI (90 نقطة):</b>\n` +
-        `  1. فحص شامل للملف يشمل تقرير التشابه العلمي وتقرير الذكاء الاصطناعي معاً.\n` +
+        `  1. فحص شامل للملف يشمل Similarity Report وتقرير الذكاء الاصطناعي معاً.\n` +
         `  2. <u>ملاحظة:</u> سيقوم البوت بتسليم تقريرين منفصلين لك فور انتهاء الفحص.\n\n` +
         `• <b>📄 إنشاء سيرة ATS جديدة (150 نقطة):</b>\n` +
         `  1. اختر الخدمة واكتب بياناتك (الخبرات، التعليم، المهارات) عندما يطلبها البوت.\n` +
@@ -148,8 +148,8 @@ const registerUserCommands = (bot) => {
         parse_mode: 'HTML',
         reply_markup: {
           inline_keyboard: [
-            [{ text: '📊 تقرير التشابه العلمي - Similarity (45 نقطة)', callback_data: 'service_similarity_report' }],
-            [{ text: '📊 تقرير التشابه + استبعاد المراجع (45 نقطة)', callback_data: 'service_similarity_exclude' }],
+            [{ text: '📊 Similarity Report (45 نقطة)', callback_data: 'service_similarity_report' }],
+            [{ text: '📊 Similarity Report + استبعاد المراجع (45 نقطة)', callback_data: 'service_similarity_exclude' }],
             [{ text: '🤖 تقرير فحص الذكاء الاصطناعي - AI (80 نقطة)', callback_data: 'service_ai_writing' }],
             [{ text: '📦 كلا التقريرين - تشابه + AI (90 نقطة)', callback_data: 'service_both_reports' }],
             [{ text: '📄 إنشاء سيرة ATS جديدة (150 نقطة)', callback_data: 'service_design_create_cv' }],
@@ -430,8 +430,8 @@ const registerUserCommands = (bot) => {
     const instructionMessage = 
       `📌 <b>تعليمات الاستخدام لبوت SaveTimePro</b> 🤖\n\n` +
       `📊 <b>الخدمات المتاحة وأسعارها بالنقاط:</b>\n` +
-      `• تقرير التشابه العلمي (Similarity) 📊 — <b>45 نقطة</b>\n` +
-      `• تقرير التشابه + استبعاد المراجع 📊 — <b>45 نقطة</b>\n` +
+      `• Similarity Report 📊 — <b>45 نقطة</b>\n` +
+      `• Similarity Report + استبعاد المراجع 📊 — <b>45 نقطة</b>\n` +
       `• تقرير فحص الذكاء الاصطناعي (AI) 🤖 — <b>80 نقطة</b>\n` +
       `• كلا التقريرين (تشابه + AI) 📦 — <b>90 نقطة</b>\n` +
       `• إنشاء سيرة ذاتية ATS جديدة 📄 — <b>150 نقطة</b>\n` +
