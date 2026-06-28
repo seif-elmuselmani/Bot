@@ -12,7 +12,10 @@ app.use(express.json());
 
 // Set up multer memory storage for handling form uploads from admin page
 const storage = multer.memoryStorage();
-const upload = multer({ storage });
+const upload = multer({ 
+    storage,
+    limits: { fileSize: 20 * 1024 * 1024 } // 20 MB limit per file
+});
 
 // Serve static files for Love and Grad templates (now internal to the Bot folder for easy deployment)
 app.use('/love', express.static(path.join(__dirname, 'public/love')));
@@ -52,6 +55,8 @@ app.get('/api/gift/:id', async (req, res) => {
                 'grad_9': '/grad/assets/sounds/song_9.mp3',
                 'grad_10': '/grad/assets/sounds/song_10.mp3',
                 'grad_11': '/grad/assets/sounds/song_11.mp3',
+                'grad_12': '/grad/assets/sounds/song_12.mp3',
+                'grad_13': '/grad/assets/sounds/song_13.mp3',
                 'love_1': 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-16.mp3',
                 'love_2': 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
                 'apology_1': 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
@@ -129,8 +134,17 @@ app.get('/api/gift/:id', async (req, res) => {
     }
 });
 
+// Middleware to protect create-gift API endpoints
+const verifyApiKey = (req, res, next) => {
+    const apiKey = req.headers['x-api-key'];
+    if (!apiKey || apiKey !== process.env.API_SECRET) {
+        return res.status(403).json({ error: "Unauthorized access" });
+    }
+    next();
+};
+
 // Admin API: Create Love Gift (via admin.html)
-app.post('/api/create-gift/love', upload.fields([
+app.post('/api/create-gift/love', verifyApiKey, upload.fields([
     { name: 'collageMainPhoto', maxCount: 1 },
     { name: 'messageTagPhoto', maxCount: 1 },
     { name: 'messagePhotos', maxCount: 10 },
@@ -196,7 +210,7 @@ app.post('/api/create-gift/love', upload.fields([
 });
 
 // Admin API: Create Grad Gift (via admin.html)
-app.post('/api/create-gift/grad', upload.fields([
+app.post('/api/create-gift/grad', verifyApiKey, upload.fields([
     { name: 'polaroidPhoto', maxCount: 1 },
     { name: 'filmStripPhotos', maxCount: 4 },
     { name: 'photoboothPhotos', maxCount: 3 },

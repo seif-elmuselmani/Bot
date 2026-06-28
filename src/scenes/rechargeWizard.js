@@ -92,8 +92,8 @@ const rechargeWizard = new WizardScene(
     const text = ctx.message?.text?.trim();
     const normalizedText = normalizeDigits(text);
     const amount = parseFloat(normalizedText);
-    if (isNaN(amount) || amount <= 0) {
-      await ctx.reply('❌ قيمة غير صالحة. من فضلك أدخل رقماً صحيحاً أكبر من صفر (مثال: 150):', {
+    if (isNaN(amount) || amount <= 0 || amount > 100000) {
+      await ctx.reply('❌ قيمة غير صالحة. من فضلك أدخل رقماً صحيحاً أكبر من صفر وأقل من 100,000 (مثال: 150):', {
         reply_markup: {
           keyboard: [
             [{ text: '❌ إلغاء العملية' }]

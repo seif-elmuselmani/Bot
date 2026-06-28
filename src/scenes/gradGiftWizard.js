@@ -164,7 +164,7 @@ const gradGiftWizard = new WizardScene(
     if (await checkCancel(ctx, next)) return;
     ctx.wizard.state.giftData.theme = ctx.message?.text?.includes('الأزرق') ? 'blue' : 'pink';
     
-    const webAppUrl = (process.env.BASE_URL || 'https://gitr_i7bcc-980.d.jrnm.app') + '/mini-app/music-player.html';
+    const webAppUrl = (process.env.BASE_URL || 'https://gitr_i7bcc-980.d.jrnm.app') + '/mini-app/music-player.html?v=2';
     
     await ctx.replyWithHTML(`🎵 <b>إضافة أغنية (الموسيقى):</b>\n\nكيف تفضل إضافة الأغنية التي ستعمل في خلفية الهدية؟\n\n1️⃣ <b>أرسل الآن ملف الأغنية (MP3)</b> من جهازك ليتم استخدامه مباشرة.\n\n2️⃣ <b>أو افتح المشغل أدناه</b> لاستماع واختيار الأغاني الجاهزة:`, {
         reply_markup: {
@@ -203,6 +203,12 @@ const gradGiftWizard = new WizardScene(
     const processingMsg = await ctx.reply('⏳ جاري صناعة الهدية والاتصال بالسيرفر...');
 
     try {
+        const currentUser = await User.findOne({ telegramId: ctx.from.id.toString() });
+        if (!currentUser || currentUser.balance < 10) {
+            await ctx.telegram.deleteMessage(ctx.chat.id, processingMsg.message_id);
+            await ctx.reply('⚠️ عذراً، رصيدك غير كافٍ لإتمام الهدية. يرجى شحن المحفظة أولاً.');
+            return ctx.scene.leave();
+        }
         await User.findOneAndUpdate({ telegramId: ctx.from.id.toString() }, { $inc: { balance: -10 } });
         const form = new FormData();
         const data = ctx.wizard.state.giftData;
@@ -240,8 +246,11 @@ const gradGiftWizard = new WizardScene(
         // Note: When deployed, this should be the actual server domain, e.g., process.env.BASE_URL
         form.append('clientBaseUrl', process.env.BASE_URL || 'http://localhost:7860');
 
+        const headers = form.getHeaders();
+        headers['x-api-key'] = process.env.API_SECRET;
+        
         const response = await axios.post('http://127.0.0.1:7860/api/create-gift/grad', form, {
-            headers: form.getHeaders(),
+            headers: headers,
         });
         const result = response.data;
         await ctx.telegram.deleteMessage(ctx.chat.id, processingMsg.message_id);

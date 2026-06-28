@@ -4,7 +4,7 @@ const bot = new Telegraf('8849555159:AAF0RhFsuRpiOZDc1ItAeu0lynciBfa5s0U');
 const chat_id = 6225860463;
 async function run() {
   const ids = {};
-  for (let i = 1; i <= 11; i++) {
+  for (let i = 1; i <= 13; i++) {
     const path = 'C:/Projects/freelane/Love/Now/2/Server/public/assets/sounds/song_' + i + '.mp3';
     if (fs.existsSync(path)) {
        console.log('Uploading ' + path);

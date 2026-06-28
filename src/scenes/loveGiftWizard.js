@@ -185,18 +185,22 @@ const loveGiftWizard = new WizardScene(
         
         form.append('clientBaseUrl', process.env.BASE_URL || 'http://localhost:7860');
         
+        const headers = form.getHeaders();
+        headers['x-api-key'] = process.env.API_SECRET;
+        
+        const currentUser = await User.findOne({ telegramId: ctx.from.id.toString() });
+        if (!currentUser || currentUser.balance < 10) {
+            await ctx.telegram.deleteMessage(ctx.chat.id, processingMsg.message_id);
+            await ctx.reply('⚠️ عذراً، رصيدك غير كافٍ لإتمام الهدية. يرجى شحن المحفظة أولاً.');
+            return ctx.scene.leave();
+        }
+        await User.findOneAndUpdate({ telegramId: ctx.from.id.toString() }, { $inc: { balance: -10 } });
+
         const response = await axios.post('http://127.0.0.1:7860/api/create-gift/love', form, {
-            headers: form.getHeaders(),
+            headers: headers,
         });
         const result = response.data;
         await ctx.telegram.deleteMessage(ctx.chat.id, processingMsg.message_id);
-        
-        // Deduct points
-        const user = await User.findOne({ telegramId: ctx.from.id });
-        if (user.balance >= 10) {
-            user.balance -= 10;
-            await user.save();
-        }
         
         await ctx.replyWithHTML(
             `🎉 <b>تم إنشاء هدية الحب بنجاح!</b>\n\n🔗 <b>رابط الهدية:</b>\n<a href="${result.url}">${result.url}</a>\n\nتم خصم 10 نقاط.`, {

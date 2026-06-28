@@ -23,6 +23,9 @@ const registerAdminActions = (bot) => {
   
   // Handle Approval: approve_dep_{depositId}
   bot.action(/^approve_dep_(DEP-\d+-\d+)$/, async (ctx) => {
+    if (ctx.chat?.id?.toString() !== process.env.ADMIN_GROUP_ID) {
+      return ctx.answerCbQuery('❌ غير مصرح لك. هذا الإجراء خاص بالمشرفين فقط.', { show_alert: true });
+    }
     const depositId = ctx.match[1];
 
     try {
@@ -121,6 +124,9 @@ const registerAdminActions = (bot) => {
 
   // Handle Rejection: reject_dep_{depositId}
   bot.action(/^reject_dep_(DEP-\d+-\d+)$/, async (ctx) => {
+    if (ctx.chat?.id?.toString() !== process.env.ADMIN_GROUP_ID) {
+      return ctx.answerCbQuery('❌ غير مصرح لك. هذا الإجراء خاص بالمشرفين فقط.', { show_alert: true });
+    }
     const depositId = ctx.match[1];
 
     try {
@@ -168,6 +174,9 @@ const registerAdminActions = (bot) => {
 
   // Handle Admin Order Refund: admin_refund_order_${orderId}
   bot.action(/^admin_refund_order_(ORD-\d+-\d+)$/, async (ctx) => {
+    if (ctx.chat?.id?.toString() !== process.env.ADMIN_GROUP_ID) {
+      return ctx.answerCbQuery('❌ غير مصرح لك. هذا الإجراء خاص بالمشرفين فقط.', { show_alert: true });
+    }
     const orderId = ctx.match[1];
     
     // 1. Strict admin check
