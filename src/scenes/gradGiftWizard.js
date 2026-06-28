@@ -164,7 +164,7 @@ const gradGiftWizard = new WizardScene(
     if (await checkCancel(ctx, next)) return;
     ctx.wizard.state.giftData.theme = ctx.message?.text?.includes('الأزرق') ? 'blue' : 'pink';
     
-    const webAppUrl = (process.env.BASE_URL || 'https://gitr_i7bcc-980.d.jrnm.app') + '/mini-app/music-player.html?v=2';
+    const webAppUrl = (process.env.BASE_URL || 'https://gitr_i7bcc-980.d.jrnm.app') + '/mini-app/music-player-v2.html';
     
     await ctx.replyWithHTML(`🎵 <b>إضافة أغنية (الموسيقى):</b>\n\nكيف تفضل إضافة الأغنية التي ستعمل في خلفية الهدية؟\n\n1️⃣ <b>أرسل الآن ملف الأغنية (MP3)</b> من جهازك ليتم استخدامه مباشرة.\n\n2️⃣ <b>أو افتح المشغل أدناه</b> لاستماع واختيار الأغاني الجاهزة:`, {
         reply_markup: {
