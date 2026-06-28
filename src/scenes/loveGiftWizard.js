@@ -197,16 +197,16 @@ const loveGiftWizard = new WizardScene(
         form.append('messageTagPhoto', tagStream, { filename: 'tag.jpg' });
         
         // Arrays
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < data.messagePhotos.length; i++) {
             const mStream = await getTelegramFileStream(ctx, data.messagePhotos[i]);
-            form.append(`messagePhoto${i + 1}`, mStream, { filename: `msg${i}.jpg` });
+            form.append(`messagePhotos`, mStream, { filename: `msg${i}.jpg` });
             
             const hStream = await getTelegramFileStream(ctx, data.heartPhotos[i]);
-            form.append(`heartPhoto${i + 1}`, hStream, { filename: `heart${i}.jpg` });
+            form.append(`heartPhotos`, hStream, { filename: `heart${i}.jpg` });
         }
         for (let i = 0; i < 2; i++) {
             const fStream = await getTelegramFileStream(ctx, data.flowerPhotos[i]);
-            form.append(`flowerPhoto${i + 1}`, fStream, { filename: `flower${i}.jpg` });
+            form.append(`flowerPhotos`, fStream, { filename: `flower${i}.jpg` });
         }
         
         if (data.musicId) {

@@ -33,17 +33,17 @@ async function getTelegramFileStream(ctx, fileId) {
 }
 
 const GRAD_SONGS = [
-    { id: '1', fileId: 'CQACAgQAAxkDAAOraj69MuwN_YZ2QVqUfY3Pf_xk_ToAAvAfAAJpTPhREGWZ8r7wEiU8BA' },
-    { id: '2', fileId: 'CQACAgQAAxkDAAOsaj69NSCe2tT5QIYeJ5UPBpUr-M4AAvEfAAJpTPhRz8HQ-T-oloM8BA' },
-    { id: '3', fileId: 'CQACAgQAAxkDAAOtaj69Nr2_S1LGzZoYd22vOoG1TDYAAvIfAAJpTPhRah1TMf0mX7Q8BA' },
-    { id: '4', fileId: 'CQACAgQAAxkDAAOuaj69N0aIdvs2DwzsufZsx7qqEaAAAvMfAAJpTPhRT-25UTG42_w8BA' },
-    { id: '5', fileId: 'CQACAgQAAxkDAAOvaj69N5NA1hJBchoW5Ghy1bR_HJMAAvQfAAJpTPhRLBPxWmDBKck8BA' },
-    { id: '6', fileId: 'CQACAgQAAxkDAAOwaj69OJLlsbKTAAHAldUraglhVGuxAAL1HwACaUz4UcPKlJyRQ9I-PAQ' },
-    { id: '7', fileId: 'CQACAgQAAxkDAAOxaj69OaSc8vNxBUDzsgABXApcKd3nAAL2HwACaUz4UZzXrPqVbRspPAQ' },
-    { id: '8', fileId: 'CQACAgQAAxkDAAOyaj69OdMWuZCsisH8ocXemVKsqlQAAvcfAAJpTPhRsugYYlHb4h88BA' },
-    { id: '9', fileId: 'CQACAgQAAxkDAAOzaj69OmZtT0TRhJurvlIrBaj4D1EAAvgfAAJpTPhRQ_RM-HXhIeY8BA' },
-    { id: '10', fileId: 'CQACAgQAAxkDAAO0aj69OwotArBFEky5v2cniRQYJPoAAvkfAAJpTPhRPsB-ZpZc6-Q8BA' },
-    { id: '11', fileId: 'CQACAgQAAxkDAAO1aj69PRZqyeDqajwXun2EhLT9wwIAAvofAAJpTPhR5sN_C6t4zxs8BA' },
+    { id: '1', fileId: 'CQACAgQAAxkDAAIBO2pBLPdJx_S1ye7ebcUwEm1MiF5dAAK-IwACFa4IUlEnKpOJ5ZdwPAQ' },
+    { id: '2', fileId: 'CQACAgQAAxkDAAIBPGpBLPwqAmTEYgyzkZxv7S65QzP1AAK_IwACFa4IUqgP-QZew4E7PAQ' },
+    { id: '3', fileId: 'CQACAgQAAxkDAAIBPWpBLP247XbWmgQc8NPFC2DJilEPAALAIwACFa4IUvaeNdTriOI1PAQ' },
+    { id: '4', fileId: 'CQACAgQAAxkDAAIBPmpBLP7RYaqJvyrZPN_mY1Qn5rC9AALBIwACFa4IUm52BDhj4zqKPAQ' },
+    { id: '5', fileId: 'CQACAgQAAxkDAAIBP2pBLQABncq2DNLtOJx4eg9MUJ1HugACwiMAAhWuCFLjMbrJt6k28DwE' },
+    { id: '6', fileId: 'CQACAgQAAxkDAAIBQGpBLQABqffXPBLIX22wDgqqagWlzwACwyMAAhWuCFIGthgtb-m_fzwE' },
+    { id: '7', fileId: 'CQACAgQAAxkDAAIBQWpBLQFu3PbPiUA95Wy8bY5QDnYxAALEIwACFa4IUg4wVNoxnCXCPAQ' },
+    { id: '8', fileId: 'CQACAgQAAxkDAAIBQmpBLQVarN-m8ONCNOlRKqiL5fz5AALFIwACFa4IUssfgxg8Hy4dPAQ' },
+    { id: '9', fileId: 'CQACAgQAAxkDAAIBQ2pBLQXtxDUiln98fK_Gtt0oZDd2AALGIwACFa4IUqBDPZWomFrcPAQ' },
+    { id: '10', fileId: 'CQACAgQAAxkDAAIBRGpBLQYMl0p2O2OFvXQ2GdRNK8cwAALHIwACFa4IUvcoKyHz2JNwPAQ' },
+    { id: '11', fileId: 'CQACAgQAAxkDAAIBRWpBLQiYZcZjhMYO1Y8QDeFjovgYAALIIwACFa4IUnQ8-EwfTpm5PAQ' }
 ];
 
 function getGradMusicKeyboard(currentIndex) {
@@ -221,10 +221,10 @@ const gradGiftWizard = new WizardScene(
         
         for (let i = 0; i < data.filmPhotos.length; i++) {
             const stream = await getTelegramFileStream(ctx, data.filmPhotos[i]);
-            form.append(`filmPhoto${i + 1}`, stream, { filename: `film${i}.jpg` });
+            form.append(`filmStripPhotos`, stream, { filename: `film${i}.jpg` });
             if (i < 3) {
                 const pbStream = await getTelegramFileStream(ctx, data.filmPhotos[i]);
-                form.append(`pbPhoto${i + 1}`, pbStream, { filename: `pb${i}.jpg` });
+                form.append(`photoboothPhotos`, pbStream, { filename: `pb${i}.jpg` });
             }
         }
         
