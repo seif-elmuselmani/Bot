@@ -209,7 +209,7 @@ const gradGiftWizard = new WizardScene(
             const musicStream = await getTelegramFileStream(ctx, data.customMusicId);
             form.append('music', musicStream, { filename: 'custom_music.mp3' });
         } else {
-            form.append('music', data.song);
+            form.append('presetMusic', data.song);
         }
         if (data.msg1Title) form.append('message1Title', data.msg1Title);
         if (data.msg1Body) form.append('message1Body', data.msg1Body);
