@@ -112,48 +112,17 @@ const loveGiftWizard = new WizardScene(
     const photo = ctx.message.photo[ctx.message.photo.length - 1];
     ctx.wizard.state.giftData.messageTagPhoto = photo.file_id;
     
-    await ctx.replyWithHTML(`✅ <b>انتهينا من جميع الصور!</b> 🎉\n\nالآن، أرسل <b>المقطع الصوتي (تسجيل صوتي أو أغنية MP3)</b> الذي سيعمل في خلفية الهدية، أو اختر من القائمة أدناه 👇`);
-    
-    try {
-        await ctx.replyWithAudio(LOVE_SONGS[0].fileId, { 
-            caption: '🎵 استمع للأغاني الجاهزة واكتشف المناسب لك:',
-            reply_markup: getLoveMusicKeyboard(0)
-        });
-    } catch (e) {
-        console.error('Failed to send audio previews', e);
-    }
+    await ctx.replyWithHTML(`✅ <b>انتهينا من جميع الصور!</b> 🎉\n\nالآن، أرسل <b>المقطع الصوتي (تسجيل صوتي أو أغنية MP3)</b> من جهازك ليتم إضافته للهدية:`);
     return ctx.wizard.next();
   },
 
   async (ctx) => {
-    if (ctx.callbackQuery) {
-        const data = ctx.callbackQuery.data;
-        if (data.startsWith('play_love_')) {
-            const index = parseInt(data.replace('play_love_', ''));
-            try {
-                await ctx.editMessageMedia({
-                    type: 'audio',
-                    media: LOVE_SONGS[index].fileId,
-                    caption: '🎵 استمع للأغاني الجاهزة واكتشف المناسب لك:'
-                }, { reply_markup: getLoveMusicKeyboard(index) });
-            } catch(e) {}
-            await ctx.answerCbQuery();
-            return;
-        } else if (data.startsWith('select_love_')) {
-            const index = parseInt(data.replace('select_love_', ''));
-            ctx.wizard.state.giftData.presetMusic = LOVE_SONGS[index].id;
-            await ctx.answerCbQuery('✅ تم اختيار الأغنية الجاهزة!');
-            await ctx.replyWithHTML(`✅ <b>تم تحديد الصوت!</b>\n\nالآن، أرسل <b>العنوان الرئيسي</b> الذي سيظهر في البداية (مثال: عيد حب سعيد يا حبيبتي) 📝`);
-            return ctx.wizard.next();
-        } else {
-            return;
-        }
-    } else if (ctx.message && (ctx.message.audio || ctx.message.voice)) {
+    if (ctx.message && (ctx.message.audio || ctx.message.voice)) {
         ctx.wizard.state.giftData.musicId = (ctx.message.audio || ctx.message.voice).file_id;
-        await ctx.replyWithHTML(`✅ <b>تم استلام مقطعك الصوتي!</b>\n\nالآن، أرسل <b>العنوان الرئيسي</b> الذي سيظهر في البداية (مثال: عيد حب سعيد يا حبيبتي) 📝`);
+        await ctx.replyWithHTML(`✅ <b>تم استلام مقطعك الصوتي!</b>\n\nالآن، أرسل <b>العنوان الرئيسي</b> الذي سيظهر في البداية:\n<i>(أو اضغط "تخطي" لاستخدام: "Happy Valentine's Day")</i> 📝`);
         return ctx.wizard.next();
     } else {
-        await ctx.reply('⚠️ يرجى إرسال مقطع صوتي خاص بك، أو الضغط على زر اختيار أسفل الأغاني الجاهزة.');
+        await ctx.reply('⚠️ يرجى إرسال ملف صوتي (أغنية أو تسجيل) من جهازك.');
         return;
     }
   },
@@ -163,8 +132,8 @@ const loveGiftWizard = new WizardScene(
         await ctx.reply('⚠️ يرجى إرسال نص العنوان الرئيسي.');
         return;
     }
-    ctx.wizard.state.giftData.introTitle = ctx.message.text;
-    await ctx.replyWithHTML(`✅ تم حفظ العنوان.\n\nالآن، أرسل <b>محتوى رسالة الحب</b> الموجهة لمن تحب:`);
+    ctx.wizard.state.giftData.introTitle = ctx.message.text.trim() === 'تخطي' ? '' : ctx.message.text.trim();
+    await ctx.replyWithHTML(`✅ تم حفظ العنوان.\n\nالآن، أرسل <b>محتوى رسالة الحب</b> الموجهة لمن تحب:\n<i>(أو اضغط "تخطي" لاستخدام: "I love you forever...")</i>`);
     return ctx.wizard.next();
   },
 

@@ -46,15 +46,27 @@ const GRAD_SONGS = [
     { id: '11', fileId: 'CQACAgQAAxkDAAIBRWpBLQiYZcZjhMYO1Y8QDeFjovgYAALIIwACFa4IUnQ8-EwfTpm5PAQ' }
 ];
 
-function getGradMusicKeyboard(currentIndex) {
-    const prev = currentIndex > 0 ? currentIndex - 1 : GRAD_SONGS.length - 1;
-    const next = currentIndex < GRAD_SONGS.length - 1 ? currentIndex + 1 : 0;
+function getStaticMusicKeyboard() {
     return {
         inline_keyboard: [
-            [{ text: `✅ اختيار الأغنية (${currentIndex + 1}/${GRAD_SONGS.length})`, callback_data: `select_grad_${currentIndex}` }],
             [
-                { text: '⬅️ الأغنية السابقة', callback_data: `play_grad_${prev}` },
-                { text: 'الأغنية التالية ➡️', callback_data: `play_grad_${next}` }
+                { text: 'أغنية 1', callback_data: 'select_grad_0' },
+                { text: 'أغنية 2', callback_data: 'select_grad_1' },
+                { text: 'أغنية 3', callback_data: 'select_grad_2' }
+            ],
+            [
+                { text: 'أغنية 4', callback_data: 'select_grad_3' },
+                { text: 'أغنية 5', callback_data: 'select_grad_4' },
+                { text: 'أغنية 6', callback_data: 'select_grad_5' }
+            ],
+            [
+                { text: 'أغنية 7', callback_data: 'select_grad_6' },
+                { text: 'أغنية 8', callback_data: 'select_grad_7' },
+                { text: 'أغنية 9', callback_data: 'select_grad_8' }
+            ],
+            [
+                { text: 'أغنية 10', callback_data: 'select_grad_9' },
+                { text: 'أغنية 11', callback_data: 'select_grad_10' }
             ]
         ]
     };
@@ -92,7 +104,7 @@ const gradGiftWizard = new WizardScene(
     const text = ctx.message?.text?.trim();
     if (text === '➡️ التالي') {
         if (ctx.wizard.state.giftData.filmPhotos.length === 0) return ctx.reply('⚠️ أرسل صورة واحدة على الأقل ثم اضغط التالي.');
-        await ctx.replyWithHTML('✅ <b>اكتملت صور الذكريات!</b>\n\nالآن، اكتب <b>عنوان الرسالة الأولى</b> التي ستُعرض في الهدية (مثال: ألف مبروك التخرج!):', {
+        await ctx.replyWithHTML('✅ <b>اكتملت صور الذكريات!</b>\n\nالآن، اكتب <b>عنوان الرسالة الأولى</b> التي ستُعرض في الهدية:\n<i>(أو اضغط "تخطي" لاستخدام: "A Journey to Remember")</i>', {
             reply_markup: { keyboard: [[{ text: 'تخطي' }], [{ text: '❌ إلغاء العملية' }]], resize_keyboard: true }
         });
         return ctx.wizard.next();
@@ -108,21 +120,21 @@ const gradGiftWizard = new WizardScene(
   async (ctx, next) => {
     if (await checkCancel(ctx, next)) return;
     ctx.wizard.state.giftData.msg1Title = ctx.message?.text?.trim() === 'تخطي' ? '' : ctx.message?.text?.trim();
-    await ctx.replyWithHTML('📝 <b>محتوى الرسالة الأولى:</b>\n\nاكتب الآن نص الرسالة التفصيلي الذي يعبر عن مشاعرك تجاه الخريج:');
+    await ctx.replyWithHTML('📝 <b>محتوى الرسالة الأولى:</b>\n\nاكتب الآن نص الرسالة التفصيلي الذي يعبر عن مشاعرك تجاه الخريج:\n<i>(أو اضغط "تخطي" لاستخدام: "You did it! All the late nights...")</i>');
     return ctx.wizard.next();
   },
 
   async (ctx, next) => {
     if (await checkCancel(ctx, next)) return;
     ctx.wizard.state.giftData.msg1Body = ctx.message?.text?.trim() === 'تخطي' ? '' : ctx.message?.text?.trim();
-    await ctx.replyWithHTML('✍️ <b>عنوان الرسالة الثانية:</b>\n\nاكتب عنواناً للرسالة الثانية (أو اضغط "تخطي"):');
+    await ctx.replyWithHTML('✍️ <b>عنوان الرسالة الثانية:</b>\n\nاكتب عنواناً للرسالة الثانية:\n<i>(أو اضغط "تخطي" لاستخدام: "The Future is Yours")</i>');
     return ctx.wizard.next();
   },
 
   async (ctx, next) => {
     if (await checkCancel(ctx, next)) return;
     ctx.wizard.state.giftData.msg2Title = ctx.message?.text?.trim() === 'تخطي' ? '' : ctx.message?.text?.trim();
-    await ctx.replyWithHTML('📝 <b>محتوى الرسالة الثانية:</b>\n\nاكتب نص الرسالة الثانية التفصيلي:');
+    await ctx.replyWithHTML('📝 <b>محتوى الرسالة الثانية:</b>\n\nاكتب نص الرسالة الثانية التفصيلي:\n<i>(أو اضغط "تخطي" لاستخدام: "This degree is just the beginning...")</i>');
     return ctx.wizard.next();
   },
 
@@ -152,18 +164,10 @@ const gradGiftWizard = new WizardScene(
     if (await checkCancel(ctx, next)) return;
     ctx.wizard.state.giftData.theme = ctx.message?.text?.includes('الأزرق') ? 'blue' : 'pink';
     
-    await ctx.replyWithHTML(`✅ <b>تم اختيار الثيم!</b> 🎉\n\nالآن، أرسل <b>المقطع الصوتي (تسجيل صوتي أو أغنية MP3)</b> الذي سيعمل في خلفية الهدية، أو اختر من القائمة أدناه 👇`, {
-        reply_markup: { remove_keyboard: true }
+    await ctx.replyWithHTML(`🎵 <b>إضافة أغنية (الموسيقى):</b>\n\nكيف تفضل إضافة الأغنية التي ستعمل في خلفية الهدية؟\n\n1️⃣ <b>أرسل الآن ملف الأغنية (MP3)</b> من جهازك ليتم استخدامه مباشرة.\n\n2️⃣ <b>أو اختر رقماً</b> من الأغاني الجاهزة أدناه:`, {
+        reply_markup: getStaticMusicKeyboard()
     });
     
-    try {
-        await ctx.replyWithAudio(GRAD_SONGS[0].fileId, { 
-            caption: '🎵 استمع للأغاني الجاهزة واكتشف المناسب لك:',
-            reply_markup: getGradMusicKeyboard(0)
-        });
-    } catch (e) {
-        console.error('Failed to send audio previews', e);
-    }
     return ctx.wizard.next();
   },
 
@@ -172,18 +176,7 @@ const gradGiftWizard = new WizardScene(
     
     if (ctx.callbackQuery) {
         const data = ctx.callbackQuery.data;
-        if (data.startsWith('play_grad_')) {
-            const index = parseInt(data.replace('play_grad_', ''));
-            try {
-                await ctx.editMessageMedia({
-                    type: 'audio',
-                    media: GRAD_SONGS[index].fileId,
-                    caption: '🎵 استمع للأغاني الجاهزة واكتشف المناسب لك:'
-                }, { reply_markup: getGradMusicKeyboard(index) });
-            } catch(e) {}
-            await ctx.answerCbQuery();
-            return;
-        } else if (data.startsWith('select_grad_')) {
+        if (data.startsWith('select_grad_')) {
             const index = parseInt(data.replace('select_grad_', ''));
             ctx.wizard.state.giftData.song = `grad_${GRAD_SONGS[index].id}`;
             await ctx.answerCbQuery('✅ تم اختيار الأغنية الجاهزة!');
