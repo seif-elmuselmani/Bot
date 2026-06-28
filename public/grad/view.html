@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy Graduation Day</title>
+    <style>
+        :root {
+            --primary: #b7950b;
+            --secondary: #d4ac0d;
+            --bg-light: #fffcf2;
+            --text-title: #b7950b;
+        }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: linear-gradient(rgba(10, 16, 31, 0.85), rgba(10, 16, 31, 0.85)), url('/assets/defaults/grad_bg.png') center/cover no-repeat fixed; font-family: 'Georgia', serif; overflow: hidden; -webkit-user-select: none; user-select: none; }
+        
+        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0a101f; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; font-size: 24px; }
+        .pulse-cap { font-size: 60px; animation: pulse 1.5s infinite; margin-bottom: 20px; }
+        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.2); opacity: 0.8; } 100% { transform: scale(1); opacity: 1; } }
+
+        /* Scene 1: Envelope Intro */
+        #scene-intro { position: absolute; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 100; }
+        .envelope-container { position: relative; width: 300px; height: 200px; }
+        .envelope-bg { position: absolute; width: 100%; height: 100%; background: var(--primary); border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: background 0.5s; }
+        .envelope-flap { position: absolute; width: 0; height: 0; border-left: 150px solid transparent; border-right: 150px solid transparent; border-top: 100px solid var(--secondary); top: 0; transform-origin: top; z-index: 3; transition: border-top-color 0.5s; }
+        .letter { position: absolute; width: 90%; height: 90%; background: #fffdd0; top: 5%; left: 5%; z-index: 2; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; text-align: center; font-size: 22px; color: #5c4033; font-weight: bold; border: 1px solid #e5dbb0; }
+        .envelope-front { position: absolute; width: 0; height: 0; border-left: 150px solid #d4af37; border-right: 150px solid #d4af37; border-bottom: 100px solid #c5a030; border-top: 100px solid transparent; bottom: 0; z-index: 4; }
+        
+        .deco-item { position: absolute; z-index: 5; opacity: 0; pointer-events: none; }
+        .deco-cap { width: 120px; top: -50px; left: -60px; transform: rotate(-15deg); }
+        .deco-star { width: 80px; bottom: -30px; left: -20px; transform: rotate(10deg); }
+        .deco-bouquet { width: 140px; top: 20px; right: -70px; transform: rotate(15deg); }
+
+        /* Scene 2: The Main Message (Split Book Layout) */
+        #scene-main { position: absolute; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; z-index: 50; overflow-y: auto; }
+        .book-layout { width: 800px; max-width: 95%; background: var(--bg-light); border-radius: 15px; box-shadow: 0 20px 50px rgba(0,0,0,0.6); display: flex; position: relative; max-height: 90vh; overflow-y: auto; transition: background 0.5s; }
+        .book-left, .book-right { width: 50%; padding: 40px; box-sizing: border-box; position: relative; }
+        
+        .polaroid { background: white; padding: 15px 15px 40px 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); transform: rotate(-3deg); width: 80%; margin: auto; }
+        .polaroid img { width: 100%; height: auto; object-fit: cover; }
+        
+        .clover { position: absolute; top: 20px; right: 20px; width: 30px; pointer-events: none; }
+        .message-title { font-size: 24px; color: var(--text-title); font-weight: bold; background: rgba(255,255,255,0.5); padding: 5px 10px; display: inline-block; margin-bottom: 20px; border-radius: 5px; }
+        .message-body { font-size: 18px; color: #555; line-height: 1.6; }
+        .medal { position: absolute; bottom: 40px; left: 20px; width: 80px; pointer-events: none; z-index: 1; }
+        .sunflower-bg { position: absolute; bottom: -50px; right: -50px; width: 250px; opacity: 0.2; pointer-events: none; }
+
+        /* Scene 3: Film Strips Gallery */
+        #scene-gallery { position: absolute; width: 100%; height: 100%; overflow: hidden; opacity: 0; pointer-events: none; z-index: 40; }
+        .film-strip { position: absolute; width: 120px; background: #222; padding: 10px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+        .film-strip img { width: 100%; margin-bottom: 10px; border: 2px solid white; box-sizing: border-box; }
+        
+        .final-card { position: absolute; bottom: 10%; left: 50%; transform: translateX(-50%); background: var(--bg-light); padding: 30px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 400px; text-align: center; transition: background 0.5s; }
+        .final-card h3 { color: var(--text-title); margin-top: 0; }
+        .final-card p { color: #555; }
+        
+        .photobooth { position: absolute; right: -80px; bottom: 20px; background: white; padding: 10px 10px 30px 10px; width: 80px; transform: rotate(10deg); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .photobooth img { width: 100%; margin-bottom: 5px; }
+
+        /* Floating Stickers */
+        .sticker { position: absolute; width: 50px; z-index: 45; opacity: 0; }
+
+        .next-btn { display: inline-block; background: var(--primary); color: white; border: none; padding: 10px 20px; font-size: 16px; font-weight: bold; border-radius: 5px; cursor: pointer; margin-top: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: background 0.3s; }
+        .next-btn:hover { filter: brightness(0.9); }
+        
+        .watermark { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); color: #fff; font-size: 12px; font-family: sans-serif; opacity: 0; z-index: 100; pointer-events: none; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            /* Scale Envelope */
+            .envelope-container { transform: scale(0.85); }
+            
+            /* Book Layout */
+            .book-layout { flex-direction: column; max-height: 85vh; padding-bottom: 20px; }
+            .book-left, .book-right { width: 100%; padding: 20px 15px; }
+            .polaroid { width: 90%; padding: 10px 10px 30px 10px; margin: 20px auto; }
+            
+            /* Decorations */
+            .clover { top: 10px; right: 10px; width: 25px; }
+            .medal { display: none; }
+            .sunflower-bg { width: 150px; right: -30px; bottom: 20px; opacity: 0.15; }
+            
+            /* Gallery Layout */
+            .film-strip { width: 80px; }
+            #film1 { left: 2% !important; }
+            #film2 { left: auto !important; right: 2% !important; transform: rotate(-5deg); }
+            
+            .final-card { width: 90%; padding: 20px; bottom: 10px; }
+            .final-card h3 { font-size: 18px; }
+            .final-card p { font-size: 14px; }
+            
+            /* Fix Photobooth Overflow */
+            .photobooth { position: relative; right: auto; bottom: auto; margin: 15px auto 0 auto; transform: rotate(0deg); width: 80px; }
+            
+            .message-title { font-size: 20px; position: relative; z-index: 2; }
+            .message-body { font-size: 16px; position: relative; z-index: 2; }
+            .next-btn { width: 100%; text-align: center; margin-top: 20px; position: relative; z-index: 5; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="loading">
+        <div class="pulse-cap">🎓</div>
+        <div>Loading Your Gift...</div>
+    </div>
+
+    <!-- Background Audio -->
+    <audio id="bgMusic" loop></audio>
+
+    <!-- Scene 1 -->
+    <div id="scene-intro" onclick="openEnvelope()">
+        <div class="envelope-container">
+            <div class="envelope-bg"></div>
+            <div class="letter" id="letter">Happy<br>Graduation<br>Day!</div>
+            <div class="envelope-front"></div>
+            <div class="envelope-flap" id="flap"></div>
+            
+            <img src="https://raw.githubusercontent.com/twitter/twemoji/master/assets/svg/1f393.svg" class="deco-item deco-cap" id="deco1">
+            <img src="https://raw.githubusercontent.com/twitter/twemoji/master/assets/svg/2b50.svg" class="deco-item deco-star" id="deco2">
+            <img src="https://raw.githubusercontent.com/twitter/twemoji/master/assets/svg/1f490.svg" class="deco-item deco-bouquet" id="deco3">
+        </div>
+    </div>
+
+    <!-- Scene 2 -->
+    <div id="scene-main">
+        <div class="book-layout">
+            <div class="book-left">
+                <div class="polaroid">
+                    <img id="mainPolaroid" src="">
+                </div>
+            </div>
+            <div class="book-right">
+                <img src="https://raw.githubusercontent.com/twitter/twemoji/master/assets/svg/1f340.svg" class="clover">
+                <div class="message-title" id="msg1Title"></div>
+                <div class="message-body" id="msg1Body"></div>
+                
+                <img src="https://raw.githubusercontent.com/twitter/twemoji/master/assets/svg/1f3c5.svg" class="medal">
+                <img src="https://raw.githubusercontent.com/twitter/twemoji/master/assets/svg/1f33b.svg" class="sunflower-bg">
+                
+                <button class="next-btn" onclick="transitionToScene3()">التالي ➡️</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scene 3 -->
+    <div id="scene-gallery">
+        <div class="film-strip" id="film1" style="left: 10%; top: -500px; transform: rotate(-15deg);">
+            <img id="f1" src=""><img id="f2" src="">
+        </div>
+        <div class="film-strip" id="film2" style="left: 40%; top: -500px; transform: rotate(5deg);">
+            <img id="f3" src=""><img id="f4" src="">
+        </div>
+        
+        <div class="final-card" id="finalCard">
+            <h3 id="msg2Title"></h3>
+            <p id="msg2Body"></p>
+            <audio id="voiceNotePlayer" controls style="width: 100%; height: 35px; margin-top: 15px; display: none;"></audio>
+            <div class="photobooth">
+                <img id="pb1" src=""><img id="pb2" src=""><img id="pb3" src="">
+            </div>
+        </div>
+
+        <!-- Stickers -->
+        <img src="https://raw.githubusercontent.com/twitter/twemoji/master/assets/svg/2b50.svg" class="sticker" id="st1" style="left:20%; top:20%;">
+        <img src="https://raw.githubusercontent.com/twitter/twemoji/master/assets/svg/1f431.svg" class="sticker" id="st2" style="right:20%; top:15%;">
+        <img src="https://raw.githubusercontent.com/twitter/twemoji/master/assets/svg/2708.svg" class="sticker" id="st3" style="left:10%; top:60%;">
+        
+        <div class="watermark" id="watermark">Made with ❤️ by LoveGift</div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.0/vanilla-tilt.min.js"></script>
+    <script>
+        document.addEventListener('contextmenu', event => event.preventDefault());
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I','J','C'].includes(e.key.toUpperCase())) || (e.ctrlKey && e.key.toUpperCase() === 'U')) { e.preventDefault(); }
+        });
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const giftId = urlParams.get('id');
+
+        if (!giftId) {
+            document.body.innerHTML = "<h1 style='color:white;text-align:center;margin-top:20%'>Gift Not Found!</h1>";
+        } else {
+            fetch(`/api/gift/${giftId}`)
+                .then(res => res.json())
+                .then(data => {
+                    // Set Theme Colors
+                    const root = document.documentElement;
+                    if (data.theme === 'blue') {
+                        root.style.setProperty('--primary', '#2874a6');
+                        root.style.setProperty('--secondary', '#3498db');
+                        root.style.setProperty('--bg-light', '#ebf5fb');
+                        root.style.setProperty('--text-title', '#154360');
+                    } else if (data.theme === 'pink') {
+                        root.style.setProperty('--primary', '#c0392b');
+                        root.style.setProperty('--secondary', '#e74c3c');
+                        root.style.setProperty('--bg-light', '#fdedec');
+                        root.style.setProperty('--text-title', '#7b241c');
+                    }
+                    
+                    // Populate Data
+                    const bgMusic = document.getElementById('bgMusic');
+                    bgMusic.src = data.assets.music;
+                    
+                    if (data.assets.voiceNote) {
+                        const vnPlayer = document.getElementById('voiceNotePlayer');
+                        vnPlayer.src = data.assets.voiceNote;
+                        vnPlayer.style.display = 'block';
+                        
+                        // UX improvement: Pause bg music when voice note plays
+                        vnPlayer.onplay = () => { bgMusic.pause(); };
+                        vnPlayer.onpause = () => { bgMusic.play().catch(e=>{}); };
+                        vnPlayer.onended = () => { bgMusic.play().catch(e=>{}); };
+                    }
+                    document.getElementById('mainPolaroid').src = data.assets.polaroidPhoto;
+                    
+                    document.getElementById('msg1Title').innerText = data.texts.message1Title;
+                    document.getElementById('msg1Body').innerText = data.texts.message1Body;
+                    document.getElementById('msg2Title').innerText = data.texts.message2Title;
+                    document.getElementById('msg2Body').innerText = data.texts.message2Body;
+
+                    // Film Strips
+                    document.getElementById('f1').src = data.assets.filmStripPhotos[0];
+                    document.getElementById('f2').src = data.assets.filmStripPhotos[1];
+                    document.getElementById('f3').src = data.assets.filmStripPhotos[2];
+                    document.getElementById('f4').src = data.assets.filmStripPhotos[3];
+
+                    // Photobooth
+                    document.getElementById('pb1').src = data.assets.photoboothPhotos[0];
+                    document.getElementById('pb2').src = data.assets.photoboothPhotos[1];
+                    document.getElementById('pb3').src = data.assets.photoboothPhotos[2];
+
+                    // Hide Loading
+                    gsap.to("#loading", { opacity: 0, duration: 1, onComplete: () => {
+                        document.getElementById('loading').style.display = 'none';
+                        introAnimation();
+                    }});
+                })
+                .catch(err => {
+                    console.error(err);
+                    document.body.innerHTML = "<h1 style='color:white;text-align:center;margin-top:20%'>Error Loading Gift!</h1>";
+                });
+        }
+
+        function introAnimation() {
+            gsap.from(".envelope-container", { y: 100, opacity: 0, duration: 1, ease: "back.out(1.7)" });
+            gsap.to(".deco-item", { opacity: 1, scale: 1.2, duration: 1, stagger: 0.2, delay: 0.5, ease: "elastic.out(1, 0.3)" });
+        }
+
+        function openEnvelope() {
+            // Read Receipt
+            fetch(`/api/opened/${giftId}`).catch(e => console.log('Read receipt error'));
+
+            // Play Audio Logic
+            document.getElementById('bgMusic').play().catch(e => console.log("Audio play blocked by browser"));
+            
+            // Confetti Explosion!
+            confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 }, colors: ['#b7950b', '#d4ac0d', '#ffffff'] });
+
+            // Animate Envelope Open
+            gsap.to("#flap", { rotationX: 180, duration: 0.8, ease: "power2.inOut" });
+            
+            // Fix Z-Index bug: Make the letter jump to the front layer when it starts moving up!
+            gsap.set("#letter", { zIndex: 10, delay: 0.4 });
+            gsap.to("#letter", { y: -120, duration: 1, delay: 0.5, ease: "power2.out" });
+            
+            // Transition to Scene 2
+            gsap.to("#scene-intro", { opacity: 0, scale: 2, duration: 1, delay: 2, onComplete: () => {
+                document.getElementById('scene-intro').style.pointerEvents = 'none';
+                showScene2();
+            }});
+        }
+
+        function showScene2() {
+            document.getElementById('scene-main').style.opacity = 1;
+            document.getElementById('scene-main').style.pointerEvents = 'auto';
+            gsap.from(".book-layout", { y: 100, opacity: 0, duration: 1, ease: "power3.out" });
+            
+            // Apply Vanilla Tilt
+            VanillaTilt.init(document.querySelector(".book-layout"), { max: 5, speed: 400, glare: true, "max-glare": 0.2 });
+            VanillaTilt.init(document.querySelector(".polaroid"), { max: 15, speed: 400 });
+        }
+
+        function transitionToScene3() {
+            gsap.to("#scene-main", { opacity: 0, duration: 1, onComplete: () => {
+                document.getElementById('scene-main').style.pointerEvents = 'none';
+                showScene3();
+            }});
+        }
+
+        function showScene3() {
+            document.getElementById('scene-gallery').style.opacity = 1;
+            document.getElementById('scene-gallery').style.pointerEvents = 'auto';
+            
+            // Film strips drop down
+            gsap.to(".film-strip", { top: "10%", duration: 2, stagger: 0.5, ease: "bounce.out" });
+            
+            // Stickers pop up
+            gsap.to(".sticker", { opacity: 1, scale: 1.5, duration: 1, stagger: 0.3, ease: "elastic.out(1, 0.3)" });
+            
+            // Final card floats up
+            gsap.from(".final-card", { y: 200, opacity: 0, duration: 1.5, delay: 2, ease: "power3.out" });
+            
+            // Watermark fades in
+            gsap.to(".watermark", { opacity: 1, duration: 1, delay: 3.5 });
+        }
+    </script>
+</body>
+</html>

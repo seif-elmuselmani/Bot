@@ -1,0 +1,366 @@
+:root {
+    --bg-color: #5a0b14; /* Deep maroon */
+    --text-color: #f8e1e1;
+    --font-title: 'Dancing Script', cursive;
+    --font-body: 'Nunito', sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: var(--font-body);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+}
+
+.app-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.screen {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    visibility: hidden;
+    z-index: 1;
+}
+
+.screen.active {
+    opacity: 1;
+    visibility: visible;
+    z-index: 10;
+}
+
+/* Titles */
+.title {
+    font-family: var(--font-title);
+    font-size: 3.5rem;
+    margin-bottom: 2rem;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+.subtitle {
+    font-family: var(--font-body);
+    font-size: 1.2rem;
+    margin-top: 2rem;
+}
+
+/* Intro Screen */
+.cake-wrapper {
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+.cake-wrapper:hover {
+    transform: scale(1.1);
+}
+.cake-wrapper img {
+    width: 250px;
+    filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5));
+}
+.cursor-pointer {
+    margin-top: -20px;
+    margin-left: 80px;
+}
+
+/* Choose Gift */
+.gifts-container {
+    display: flex;
+    gap: 4rem;
+}
+.gift-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    transition: transform 0.3s;
+}
+.gift-item:hover {
+    transform: translateY(-10px) scale(1.1);
+}
+.gift-item img {
+    width: 130px;
+    height: 130px;
+    object-fit: contain;
+    margin-bottom: 1rem;
+    filter: drop-shadow(2px 5px 10px rgba(0,0,0,0.4));
+}
+.gift-item span {
+    font-family: var(--font-title);
+    font-size: 1.8rem;
+    letter-spacing: 2px;
+}
+
+/* Message Screen */
+.message-layout {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 3rem;
+    width: 90%;
+    max-width: 1000px;
+}
+.polaroid-strip {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    background: #fff;
+    padding: 10px 10px 30px 10px;
+    box-shadow: 2px 5px 15px rgba(0,0,0,0.4);
+    transform: rotate(-3deg);
+}
+.polaroid-img {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    background: #eee;
+}
+
+/* Elegant Classic Letter Paper */
+.letter-paper {
+    background: #fffdf0;
+    color: #4a2c2a;
+    padding: 3rem 4rem;
+    width: 50%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+    border-radius: 8px;
+    position: relative;
+    border: 1px solid #e0d8c3;
+}
+.letter-paper h2 {
+    font-family: var(--font-title);
+    margin-bottom: 1.5rem;
+    text-align: center;
+    font-size: 2.8rem;
+    color: #8c1c2b;
+}
+.letter-paper p {
+    font-family: var(--font-body);
+    font-size: 1.2rem;
+    line-height: 1.8;
+    white-space: pre-line;
+}
+
+.tag-card {
+    background: #f9d3d3;
+    padding: 15px 15px 30px 15px;
+    border-radius: 5px;
+    box-shadow: 2px 6px 15px rgba(0,0,0,0.3);
+    transform: rotate(6deg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+}
+.tag-card::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 20px;
+    background: var(--bg-color);
+    border-radius: 50%;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
+}
+.tag-card img {
+    width: 140px;
+    height: 140px;
+    object-fit: cover;
+    border: 4px solid #fff;
+    margin-top: 10px;
+}
+.tag-text {
+    font-family: var(--font-title);
+    margin-top: 10px;
+    color: #5a0b14;
+    font-size: 1.6rem;
+}
+
+/* Flower Screen */
+.flower-layout {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 4rem;
+    width: 90%;
+}
+.polaroid-scatter {
+    display: flex;
+    position: relative;
+    width: 200px;
+    height: 250px;
+}
+.polaroid-scatter img {
+    position: absolute;
+    width: 130px;
+    height: 150px;
+    object-fit: cover;
+    border: 8px solid #fff;
+    border-bottom: 30px solid #fff;
+    box-shadow: 2px 4px 12px rgba(0,0,0,0.5);
+}
+.main-flower img {
+    width: 380px; /* Reduced to fit better */
+    transition: filter 0.5s;
+    filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5));
+}
+.main-flower img.hover-glow:hover {
+    filter: drop-shadow(0 0 25px rgba(255,182,193,0.8)) brightness(1.1);
+}
+.side-bouquet {
+    transform: rotate(15deg);
+}
+.side-bouquet img {
+    width: 150px;
+    filter: drop-shadow(2px 5px 10px rgba(0,0,0,0.4));
+}
+
+/* Collage Screen */
+.collage-layout {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.collage-center {
+    width: 300px;
+    height: 400px;
+    object-fit: cover;
+    border: 12px solid #fff;
+    border-bottom: 50px solid #fff;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    z-index: 2;
+    transform: rotate(-2deg);
+}
+.collage-deco {
+    position: absolute;
+    z-index: 3;
+    filter: drop-shadow(2px 5px 10px rgba(0,0,0,0.4));
+}
+.cake-deco {
+    top: 20%;
+    left: 25%;
+    width: 140px;
+    transform: rotate(-10deg);
+}
+.party-hat {
+    top: 15%;
+    right: 28%;
+    width: 120px;
+    transform: rotate(15deg);
+}
+.collage-note {
+    position: absolute;
+    bottom: 20%;
+    right: 25%;
+    background: #fffdf0;
+    color: #333;
+    padding: 15px 25px;
+    font-family: var(--font-title);
+    font-size: 1.8rem;
+    transform: rotate(5deg);
+    box-shadow: 2px 5px 12px rgba(0,0,0,0.3);
+}
+
+/* Hearts Screen */
+.hearts-container {
+    display: flex;
+    gap: 3rem;
+}
+/* Wrap heart to allow drop shadow */
+.heart-wrap {
+    filter: drop-shadow(0 10px 15px rgba(0,0,0,0.4));
+}
+.heart-frame {
+    width: 200px;
+    height: 200px;
+    background-color: #fff;
+    clip-path: path('M100,30 C100,30 80,0 40,0 C0,0 0,50 0,50 C0,90 100,160 100,160 C100,160 200,90 200,50 C200,50 200,0 160,0 C120,0 100,30 100,30 Z');
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+.heart-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s;
+}
+.heart-frame:hover img {
+    transform: scale(1.1);
+}
+
+/* Buttons */
+.btn-back {
+    position: absolute;
+    bottom: 30px;
+    right: 40px;
+    background: transparent;
+    border: none;
+    color: #ffb6c1;
+    font-family: var(--font-title);
+    font-size: 1.8rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-shadow: 1px 2px 4px rgba(0,0,0,0.4);
+}
+.btn-back:hover {
+    color: #fff;
+    transform: scale(1.1);
+}
+
+/* Text Animation Classes */
+.char {
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(10px);
+}
+.word {
+    display: inline-block;
+    margin-right: 6px;
+}
+
+@media (max-width: 900px) {
+    .gifts-container, .message-layout, .flower-layout, .hearts-container {
+        flex-direction: column;
+        align-items: center;
+        gap: 2rem;
+    }
+    .letter-paper {
+        width: 90%;
+        margin: 10px 0;
+        padding: 2rem;
+    }
+    .polaroid-strip {
+        flex-direction: row;
+        transform: rotate(0);
+    }
+    .main-flower img {
+        width: 250px;
+    }
+    .tag-card {
+        transform: rotate(0);
+    }
+}

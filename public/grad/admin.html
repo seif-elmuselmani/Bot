@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم قالب التخرج | Graduation Admin</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: #f4f7f6; margin: 0; padding: 20px; 
+            -webkit-user-select: none; -ms-user-select: none; user-select: none; 
+        }
+        .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #b7950b; margin-bottom: 30px; }
+        
+        .section-title { color: #283747; border-bottom: 2px solid #b7950b; padding-bottom: 5px; margin-top: 30px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-weight: bold; margin-bottom: 8px; color: #333; }
+        
+        input[type="text"], input[type="file"], textarea, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-family: inherit; }
+        
+        .upload-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        .upload-box { background: #fdfefe; padding: 15px; border: 1px dashed #aaa; border-radius: 8px; text-align: center; }
+        
+        .btn-smart { background: #b7950b; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
+        .btn-smart:hover { background: #d4ac0d; }
+
+        button.submit-btn { background: #283747; color: white; padding: 15px 20px; border: none; border-radius: 5px; cursor: pointer; width: 100%; font-size: 1.2rem; margin-top: 30px; transition: 0.3s; }
+        button.submit-btn:hover { background: #1a252f; }
+
+        #result { margin-top: 30px; text-align: center; display: none; padding: 20px; background: #fef9e7; border-radius: 10px; border: 1px solid #f9e79f; }
+        .qr-wrapper { margin: 20px auto; display: flex; justify-content: center; align-items: center; }
+        #qr-canvas { width: 300px; height: 375px; max-width: 100%; border-radius: 10px; box-shadow: 0 4px 15px rgba(255, 0, 127, 0.3); background: #1a1a1d; }
+        .result-link { font-size: 1.2rem; color: #b7950b; font-weight: bold; display: block; margin: 15px 0; }
+        #download-qr-btn { display: inline-block; background: #283747; color: white; padding: 12px 25px; border-radius: 5px; text-decoration: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎓 لوحة تحكم التخرج المتقدمة</h1>
+        <form id="giftForm">
+            <!-- Hidden field for correct Base URL -->
+            <input type="hidden" name="clientBaseUrl" id="clientBaseUrl">
+            
+            <h3 class="section-title">🎨 0. إعدادات الثيم والخدمات المميزة</h3>
+            <div class="form-group">
+                <label>اختر لون ثيم الهدية</label>
+                <select name="theme">
+                    <option value="gold">الذهبي الكلاسيكي والفخم (الافتراضي)</option>
+                    <option value="blue">الأزرق الجامعي الملكي</option>
+                    <option value="pink">الوردي الناعم (الاحتفالي)</option>
+                </select>
+            </div>
+            
+            <div class="form-group" style="background: #fdf2e9; padding: 15px; border-radius: 8px; border-left: 4px solid #e67e22;">
+                <label style="color: #d35400;">🎤 ميزة ذهبية: رسالة صوتية (Voice Note)</label>
+                <small style="display:block; margin-bottom:10px; color:#555;">ستظهر رسالتك الصوتية في البطاقة النهائية ليتمكن الشخص من تشغيلها وسماع تهنئتك بصوتك.</small>
+                <input type="file" name="voiceNote" accept="audio/*">
+            </div>
+            
+            <h3 class="section-title">📝 1. نصوص التهاني</h3>
+            <div class="form-group">
+                <label>عنوان الرسالة الأولى (تظهر مع البولارويد)</label>
+                <input type="text" name="message1Title" placeholder="Example: Congratulations, Graduate!">
+            </div>
+            
+            <div class="form-group">
+                <label>نص الرسالة الأولى</label>
+                <textarea name="message1Body" rows="4" placeholder="Example: All those late nights, endless cups of coffee..."></textarea>
+            </div>
+            
+            <h3 class="section-title">📝 2. نصوص الختام</h3>
+            <div class="form-group">
+                <label>عنوان الرسالة الختامية (تظهر في البطاقة النهائية)</label>
+                <input type="text" name="message2Title" placeholder="Example: To Your Next Chapter">
+            </div>
+            
+            <div class="form-group">
+                <label>نص الرسالة الختامية</label>
+                <textarea name="message2Body" rows="3" placeholder="Example: This degree is just the beginning of your incredible journey..."></textarea>
+            </div>
+            
+            <h3 class="section-title">🎵 2. الموسيقى</h3>
+            <div class="form-group">
+                <label>اختر أغنية تخرج جاهزة أو ارفع من جهازك</label>
+                <select name="presetMusic" id="presetMusicSelect">
+                    <option value="grad_1">أغنية تخرج 1 (افتراضي)</option>
+                    <option value="grad_2">أغنية تخرج 2</option>
+                    <option value="grad_3">أغنية تخرج 3</option>
+                    <option value="grad_4">أغنية تخرج 4</option>
+                    <option value="grad_5">أغنية تخرج 5</option>
+                    <option value="grad_6">أغنية تخرج 6</option>
+                    <option value="grad_7">أغنية تخرج 7</option>
+                    <option value="grad_8">أغنية تخرج 8</option>
+                    <option value="grad_9">أغنية تخرج 9</option>
+                    <option value="grad_10">أغنية تخرج 10</option>
+                    <option value="grad_11">أغنية تخرج 11 (جديد)</option>
+                </select>
+                <!-- Audio Preview Player -->
+                <audio id="audioPreview" src="/grad/assets/sounds/song_1.mp3" controls style="width: 100%; margin-top: 10px; margin-bottom: 10px;"></audio>
+                <input type="file" name="music" accept="audio/*" style="margin-top:10px;">
+            </div>
+
+            <h3 class="section-title">🖼️ 3. معرض صور التخرج</h3>
+            <div class="upload-box" style="margin-bottom:20px;">
+                <label>الصورة الرئيسية الكبيرة (التي تظهر في إطار البولارويد)</label>
+                <input type="file" name="polaroidPhoto" accept="image/*">
+            </div>
+
+            <h4>🎞️ شرائط التصوير السينمائي (Film Strips) - اختر 4 صور</h4>
+            <div class="upload-grid">
+                <div class="upload-box"><label>صورة 1</label><input type="file" name="filmStripPhotos" accept="image/*"></div>
+                <div class="upload-box"><label>صورة 2</label><input type="file" name="filmStripPhotos" accept="image/*"></div>
+                <div class="upload-box"><label>صورة 3</label><input type="file" name="filmStripPhotos" accept="image/*"></div>
+                <div class="upload-box"><label>صورة 4</label><input type="file" name="filmStripPhotos" accept="image/*"></div>
+            </div>
+
+            <h4>📸 صور الـ Photobooth - اختر 3 صور</h4>
+            <div class="upload-grid">
+                <div class="upload-box"><label>صورة 1</label><input type="file" name="photoboothPhotos" accept="image/*"></div>
+                <div class="upload-box"><label>صورة 2</label><input type="file" name="photoboothPhotos" accept="image/*"></div>
+                <div class="upload-box"><label>صورة 3</label><input type="file" name="photoboothPhotos" accept="image/*"></div>
+            </div>
+
+            <button type="submit" class="submit-btn">🎓 إنشاء هدية التخرج</button>
+        </form>
+
+        <div id="result">
+            <h2 style="color: #b7950b;">تم إنشاء القالب بنجاح! 🎉</h2>
+            <p>الرابط الخاص بها:</p>
+            <a href="#" id="gift-link" class="result-link" target="_blank"></a>
+            <div class="qr-wrapper">
+                <canvas id="qr-canvas" width="800" height="1000"></canvas>
+            </div>
+            <a href="#" id="download-qr-btn" download="Graduation_QR_Code.png">⬇️ تحميل الباركود</a>
+        </div>
+    </div>
+
+    <script>
+        // Set correct base URL so the QR code generates the public link, not localhost
+        document.getElementById('clientBaseUrl').value = window.location.origin;
+
+        document.addEventListener('contextmenu', event => event.preventDefault());
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I','J','C'].includes(e.key.toUpperCase())) || (e.ctrlKey && e.key.toUpperCase() === 'U')) {
+                e.preventDefault();
+            }
+        });
+
+        // Audio Preview Logic
+        const audioPreview = document.getElementById('audioPreview');
+        const presetMusicSelect = document.getElementById('presetMusicSelect');
+        const songMap = {
+            'grad_1': '/grad/assets/sounds/song_1.mp3',
+            'grad_2': '/grad/assets/sounds/song_2.mp3',
+            'grad_3': '/grad/assets/sounds/song_3.mp3',
+            'grad_4': '/grad/assets/sounds/song_4.mp3',
+            'grad_5': '/grad/assets/sounds/song_5.mp3',
+            'grad_6': '/grad/assets/sounds/song_6.mp3',
+            'grad_7': '/grad/assets/sounds/song_7.mp3',
+            'grad_8': '/grad/assets/sounds/song_8.mp3',
+            'grad_9': '/grad/assets/sounds/song_9.mp3',
+            'grad_10': '/grad/assets/sounds/song_10.mp3',
+            'grad_11': '/grad/assets/sounds/song_11.mp3'
+        };
+
+        presetMusicSelect.addEventListener('change', function() {
+            const selectedSong = songMap[this.value];
+            if (selectedSong) {
+                audioPreview.src = selectedSong;
+                audioPreview.play().catch(e => console.log('Autoplay prevented by browser'));
+            }
+        });
+
+        document.getElementById('giftForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('.submit-btn');
+            btn.innerText = "جاري التحضير...";
+            btn.disabled = true;
+
+            try {
+                // Send to API
+                const response = await fetch('/api/create-gift/grad', {
+                    method: 'POST', body: new FormData(e.target) });
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('result').style.display = 'block';
+                    document.getElementById('gift-link').href = data.url;
+                    document.getElementById('gift-link').innerText = data.url;
+                    
+                    // Render Black Gift Card Heart Shaped QR Code on Canvas
+                    const canvas = document.getElementById('qr-canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Load Ribbon Image
+                    const ribbonImg = new Image();
+                    ribbonImg.crossOrigin = "Anonymous";
+                    ribbonImg.src = "https://raw.githubusercontent.com/twitter/twemoji/master/assets/svg/1f380.svg"; // Pink Bow Emoji as placeholder ribbon
+                    
+                    const img = new Image();
+                    img.crossOrigin = "Anonymous";
+                    img.onload = () => {
+                        ctx.clearRect(0, 0, 800, 1000);
+                        
+                        // Background Card
+                        ctx.fillStyle = "#1a1a1a";
+                        ctx.fillRect(0, 0, 800, 1000);
+                        
+                        // Gold Border
+                        ctx.strokeStyle = "#ffd700";
+                        ctx.lineWidth = 10;
+                        ctx.strokeRect(20, 20, 760, 960);
+                        
+                        // Title
+                        ctx.fillStyle = "#ffd700";
+                        ctx.font = "bold 50px Arial";
+                        ctx.textAlign = "center";
+                        ctx.fillText("Special Gift For You", 400, 100);
+                        
+                        // Draw Ribbon
+
+                        // Draw Full Scannable QR Code (Safe, No Clipping!)
+                        // QR Code is 600x600, positioned at x=100, y=320
+                        ctx.drawImage(img, 100, 320, 600, 600);
+
+                        // Add a beautiful heart icon right in the middle of the QR code (High EC allows this)
+                        const heartIcon = new Image();
+                        heartIcon.crossOrigin = "Anonymous";
+                        heartIcon.src = "https://raw.githubusercontent.com/twitter/twemoji/master/assets/svg/2764.svg";
+                        heartIcon.onload = () => {
+                            // Draw heart in the center of the QR (x=350, y=570, size=100x100)
+                            ctx.drawImage(heartIcon, 350, 570, 100, 100);
+                            
+                            // Setup Download Button
+                            document.getElementById('download-qr-btn').href = canvas.toDataURL("image/png");
+                        };
+                    };
+                    img.src = data.qrCode;
+
+                    document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    alert(data.error || "حدث خطأ أثناء الإنشاء!");
+                }
+            } catch (err) {
+                alert("فشل الاتصال بالسيرفر: " + err.message);
+            } finally {
+                btn.innerText = "🎓 إنشاء هدية التخرج";
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

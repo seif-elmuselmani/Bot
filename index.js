@@ -1,5 +1,5 @@
 /**
- * Localized SaveTimePro_bot Entry Point (Arabic) - Refactored & Modularized
+ * Localized LoveGift_bot Entry Point (Arabic) - Refactored & Modularized
  * Initializes configuration, establishes database connection, registers Telegraf middlewares,
  * hooks admin action callbacks & delivery reply listeners, loads admin/user command modules,
  * and launches the Telegram bot with a keep-alive HTTP server.
@@ -9,18 +9,18 @@
 require('dotenv').config();
 
 const { Telegraf } = require('telegraf');
-const connectDB = require('./config/db');
+const connectDB = require('./src/config/db');
 
 // Import Middlewares and Scenes Stage
-const { registerMiddlewares } = require('./bot/middlewares');
+const { registerMiddlewares } = require('./src/middlewares');
 
 // Import Actions & Delivery Handlers
-const { registerAdminActions } = require('./bot/actions/adminActions');
-const { setupAdminDelivery } = require('./bot/handlers/adminDelivery');
+const { registerAdminActions } = require('./src/actions/adminActions');
+const { setupAdminDelivery } = require('./src/handlers/adminDelivery');
 
 // Import Commands Modules
-const { registerAdminCommands } = require('./bot/commands/admin');
-const { registerUserCommands } = require('./bot/commands/user');
+const { registerAdminCommands } = require('./src/commands/admin');
+const { registerUserCommands } = require('./src/commands/user');
 
 const botToken = process.env.BOT_TOKEN;
 if (!botToken) {
@@ -96,21 +96,16 @@ bot.telegram.setMyCommands([
   console.error('Failed to register bot commands menu:', error);
 });
 
-// Simple HTTP server for Render's health checks and to keep the bot alive
-const http = require('http');
+// Use the Unified Express Server for Render's health checks and API endpoints
+const app = require('./server');
 const port = process.env.PORT || 7860;
-const server = http.createServer((req, res) => {
-  res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
-  res.end('SaveTimePro Bot is running! 🤖');
-});
-
-server.listen(port, () => {
-  console.log(`📡 Keep-alive HTTP server listening on port ${port}`);
+const server = app.listen(port, () => {
+  console.log(`📡 Unified Server listening on port ${port}`);
 });
 
 // Launch Bot
 bot.launch().then(() => {
-  console.log('🤖 SaveTimePro Bot has launched and is listening for updates.');
+  console.log('🤖 LoveGift Bot has launched and is listening for updates.');
 }).catch((error) => {
   console.error('Failed to launch Telegram bot:', error);
 });

@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم الهدايا الاحترافية | Professional Admin Panel</title>
+    <style>
+        /* Disable text selection */
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: #f4f7f6; margin: 0; padding: 20px; 
+            -webkit-user-select: none; /* Safari */
+            -ms-user-select: none; /* IE 10 and IE 11 */
+            user-select: none; /* Standard syntax */
+        }
+        .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #5a0b14; margin-bottom: 30px; }
+        
+        .section-title { color: #e65100; border-bottom: 2px solid #ffe0b2; padding-bottom: 5px; margin-top: 30px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-weight: bold; margin-bottom: 8px; color: #333; }
+        
+        input[type="text"], input[type="file"], textarea, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-family: inherit; }
+        
+        .upload-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }
+        .upload-box { background: #f9f9f9; padding: 15px; border: 1px dashed #aaa; border-radius: 8px; text-align: center; }
+        .upload-box label { font-size: 0.9rem; color: #555; }
+        
+        /* Visual Picker */
+        .visual-picker { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 10px; }
+        .visual-picker label { cursor: pointer; display: flex; flex-direction: column; align-items: center; border: 2px solid transparent; border-radius: 8px; padding: 10px; transition: 0.3s; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .visual-picker input[type="radio"] { display: none; }
+        .visual-picker img { width: 80px; height: 80px; object-fit: contain; margin-bottom: 10px; }
+        .visual-picker input[type="radio"]:checked + img { transform: scale(1.1); filter: drop-shadow(0 4px 8px rgba(230, 81, 0, 0.4)); }
+        .visual-picker input[type="radio"]:checked ~ span { color: #e65100; font-weight: bold; }
+
+        /* Audio Picker */
+        .audio-item { display: flex; align-items: center; justify-content: space-between; background: #fff3e0; padding: 10px; border-radius: 5px; margin-bottom: 5px; border: 1px solid #ffcc80;}
+        .audio-item input[type="radio"] { margin-left: 10px; }
+        .play-btn { background: #5a0b14; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.9rem; margin: 0;}
+        .play-btn:hover { background: #8c1c2b; }
+
+        /* Text Injector Modal */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 100; }
+        .modal { background: white; padding: 20px; border-radius: 10px; width: 90%; max-width: 600px; max-height: 80vh; overflow-y: auto; }
+        .text-template { background: #f9f9f9; padding: 15px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 15px; cursor: pointer; transition: 0.2s; }
+        .text-template:hover { background: #ffe0b2; border-color: #ffb74d; }
+        .text-template h4 { margin: 0 0 10px 0; color: #5a0b14; }
+        .text-template p { margin: 0; font-size: 0.95rem; color: #555; }
+        .btn-close { float: left; background: red; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+        .btn-smart { background: #e65100; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; margin-bottom: 10px; display: inline-block; }
+        .btn-smart:hover { background: #ff9800; }
+
+        button.submit-btn { background: #5a0b14; color: white; padding: 15px 20px; border: none; border-radius: 5px; cursor: pointer; width: 100%; font-size: 1.2rem; margin-top: 30px; transition: background 0.3s; }
+        button.submit-btn:hover { background: #8c1c2b; }
+        button.submit-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+        /* QR Code Heart Container */
+        #result { margin-top: 30px; text-align: center; display: none; padding: 20px; background: #ffebee; border-radius: 10px; border: 1px solid #ffcdd2; }
+        .heart-qr-wrapper { margin: 20px auto; display: flex; justify-content: center; align-items: center; }
+        #qr-canvas { width: 300px; height: 300px; max-width: 100%; border-radius: 10px; box-shadow: 0 4px 15px rgba(233, 30, 99, 0.3); background: white; }
+        .result-link { font-size: 1.2rem; color: #d81b60; font-weight: bold; text-decoration: none; display: block; margin: 15px 0; }
+        #download-qr-btn { display: inline-block; background: #e81e63; color: white; padding: 12px 25px; border-radius: 5px; text-decoration: none; font-weight: bold; margin-bottom: 20px; font-size: 1.1rem; box-shadow: 0 4px 10px rgba(232, 30, 99, 0.4); }
+        #download-qr-btn:hover { background: #c2185b; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✨ لوحة تحكم الهدايا المتقدمة ✨</h1>
+        <form id="giftForm">
+            
+            <!-- القسم الأول: النصوص الذكية -->
+            <h3 class="section-title">📝 1. نصوص الرسالة</h3>
+            
+            <button type="button" class="btn-smart" onclick="openTextModal()">✨ تصفح واختيار رسائل جاهزة</button>
+            
+            <div class="form-group">
+                <label>عنوان رسالة الحب (مثال: Happy Birthday My Love)</label>
+                <input type="text" id="inputMessageTitle" name="messageTitle" placeholder="أدخل العنوان...">
+            </div>
+            <div class="form-group">
+                <label>نص الرسالة</label>
+                <textarea id="inputMessageBody" name="messageBody" rows="4" placeholder="اكتب مشاعرك هنا..."></textarea>
+            </div>
+            
+            <!-- القسم الثاني: الأغاني والمعاينة -->
+            <h3 class="section-title">🎵 2. مكتبة الأغاني (اختر أو ارفع)</h3>
+            <div class="form-group">
+                <label>اختر من مكتبة الأغاني:</label>
+                <div class="audio-item">
+                    <div>
+                        <input type="radio" name="presetMusic" value="love_1" checked> 
+                        <span>موسيقى بيانو رومانسية وهادئة</span>
+                    </div>
+                    <button type="button" class="play-btn" onclick="playPreview('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-16.mp3')">▶️ استماع</button>
+                </div>
+                <div class="audio-item">
+                    <div>
+                        <input type="radio" name="presetMusic" value="love_2"> 
+                        <span>جيتار رومانسي</span>
+                    </div>
+                    <button type="button" class="play-btn" onclick="playPreview('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3')">▶️ استماع</button>
+                </div>
+                <div class="audio-item">
+                    <div>
+                        <input type="radio" name="presetMusic" value="apology_1"> 
+                        <span>موسيقى هادئة وحزينة للاعتذار</span>
+                    </div>
+                    <button type="button" class="play-btn" onclick="playPreview('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3')">▶️ استماع</button>
+                </div>
+                <div class="audio-item">
+                    <div>
+                        <input type="radio" name="presetMusic" value="friends_1"> 
+                        <span>موسيقى مبهجة للأصدقاء</span>
+                    </div>
+                    <button type="button" class="play-btn" onclick="playPreview('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3')">▶️ استماع</button>
+                </div>
+                
+                <label style="margin-top: 15px;">أو ارفع أغنية مخصصة من جهازك (ستلغي الخيارات السابقة):</label>
+                <input type="file" name="music" accept="audio/*">
+            </div>
+
+            <!-- القسم الثالث: الأيقونات البصرية -->
+            <h3 class="section-title">🎨 3. اختيار الأشكال (أيقونات الكيك والورد)</h3>
+            <div class="form-group">
+                <label>اختر شكل الكيكة (تظهر في المقدمة والكولاج)</label>
+                <div class="visual-picker">
+                    <label>
+                        <input type="radio" name="cakeIcon" value="cake1" checked>
+                        <img src="/love/assets/cake.png" alt="كيكة كلاسيكية">
+                        <span>كلاسيكية</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="cakeIcon" value="cake2">
+                        <img src="https://raw.githubusercontent.com/twitter/twemoji/master/assets/svg/1f382.svg" alt="كيكة 2">
+                        <span>إيموجي 1</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="cakeIcon" value="cake3">
+                        <img src="https://raw.githubusercontent.com/twitter/twemoji/master/assets/svg/1f9c1.svg" alt="كيكة 3">
+                        <span>إيموجي 2</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>اختر شكل باقة الورد</label>
+                <div class="visual-picker">
+                    <label>
+                        <input type="radio" name="flowerIcon" value="flower1" checked>
+                        <img src="/love/assets/bouquet.png" alt="باقة 1">
+                        <span>واقعية</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="flowerIcon" value="flower2">
+                        <img src="https://raw.githubusercontent.com/twitter/twemoji/master/assets/svg/1f490.svg" alt="باقة 2">
+                        <span>بوكيه إيموجي</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="flowerIcon" value="flower3">
+                        <img src="https://raw.githubusercontent.com/twitter/twemoji/master/assets/svg/1f339.svg" alt="باقة 3">
+                        <span>وردة واحدة</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- القسم الرابع: الصور -->
+            <h3 class="section-title">🖼️ 4. معرض الصور والمرفوعات</h3>
+            <div class="form-group" style="background:#fff3e0; padding:15px; border-radius:5px;">
+                <label>مجموعة صور القالب (تُستخدم إن لم ترفع صور مخصصة)</label>
+                <select name="presetImages">
+                    <option value="romantic_1">صور ورود وحب كلاسيكية (افتراضي)</option>
+                    <option value="cute_cats">صور قطط لطيفة</option>
+                </select>
+            </div>
+
+            <h4>📸 صور بولارويد الرسالة (3 صور)</h4>
+            <div class="upload-grid">
+                <div class="upload-box">
+                    <label>الصورة 1</label>
+                    <input type="file" name="messagePhotos" accept="image/*">
+                </div>
+                <div class="upload-box">
+                    <label>الصورة 2</label>
+                    <input type="file" name="messagePhotos" accept="image/*">
+                </div>
+                <div class="upload-box">
+                    <label>الصورة 3</label>
+                    <input type="file" name="messagePhotos" accept="image/*">
+                </div>
+            </div>
+
+            <h4>🌸 صور البولارويد بجانب الورد (صورتان)</h4>
+            <div class="upload-grid">
+                <div class="upload-box">
+                    <label>الصورة 1</label>
+                    <input type="file" name="flowerPhotos" accept="image/*">
+                </div>
+                <div class="upload-box">
+                    <label>الصورة 2</label>
+                    <input type="file" name="flowerPhotos" accept="image/*">
+                </div>
+            </div>
+
+            <h4>🎂 الصورة المركزية لشاشة الكولاج</h4>
+            <div class="upload-box" style="max-width: 300px;">
+                <label>صورة واحدة أساسية</label>
+                <input type="file" name="collageMainPhoto" accept="image/*">
+            </div>
+
+            <h4>❤️ معرض القلوب النهائي (3 صور)</h4>
+            <div class="upload-grid">
+                <div class="upload-box">
+                    <label>قلب 1</label>
+                    <input type="file" name="heartPhotos" accept="image/*">
+                </div>
+                <div class="upload-box">
+                    <label>قلب 2</label>
+                    <input type="file" name="heartPhotos" accept="image/*">
+                </div>
+                <div class="upload-box">
+                    <label>قلب 3</label>
+                    <input type="file" name="heartPhotos" accept="image/*">
+                </div>
+            </div>
+            
+            <div class="upload-box" style="margin-top:20px; max-width: 300px;">
+                <label>صورة الـ Tag المتدلي في الرسالة</label>
+                <input type="file" name="messageTagPhoto" accept="image/*">
+            </div>
+
+            <button type="submit" class="submit-btn">✨ إنشاء الهدية المخصصة</button>
+        </form>
+
+        <div id="result">
+            <h2 style="color: #d81b60;">تم إنشاء الهدية بنجاح! 🎉</h2>
+            <p>الرابط الخاص بها:</p>
+            <a href="#" id="gift-link" class="result-link" target="_blank"></a>
+            <div class="heart-qr-wrapper">
+                <canvas id="qr-canvas" width="800" height="800"></canvas>
+            </div>
+            
+            <a href="#" id="download-qr-btn" download="Heart_QR_Code.png">⬇️ تحميل الباركود (Download QR)</a>
+            
+            <p>أرسل هذا الباركود أو الرابط للزبون!</p>
+        </div>
+    </div>
+
+    <!-- نافذة النصوص الجاهزة -->
+    <div class="modal-overlay" id="textModal">
+        <div class="modal">
+            <button class="btn-close" onclick="closeTextModal()">إغلاق X</button>
+            <h2 style="margin-top: 0;">اختر رسالة جاهزة لنسخها</h2>
+            <p style="color: #666; font-size: 0.9rem;">اضغط على أي قالب ليتم نسخه لحقل النص وتتمكن من التعديل عليه.</p>
+            
+            <div id="templatesContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- 0. Security (Prevent Inspect Element and Right Click) ---
+        document.addEventListener('contextmenu', event => event.preventDefault());
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F12' || 
+               (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C' || e.key === 'i' || e.key === 'j' || e.key === 'c')) || 
+               (e.ctrlKey && (e.key === 'U' || e.key === 'u'))) {
+                e.preventDefault();
+            }
+        });
+
+        // --- 1. Audio Player Logic ---
+        let currentAudio = null;
+        function playPreview(url) {
+            if(currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+            }
+            currentAudio = new Audio(url);
+            currentAudio.play();
+            alert("جاري تشغيل الموسيقى للمعاينة...");
+        }
+
+        // --- 2. Text Injector Logic ---
+        const textTemplates = [
+            { id: 1, type: "عيد ميلاد (رومانسي)", title: "Happy Birthday My Love", body: "كل عام وأنتِ النور الذي يضيء حياتي. لا يمكن للكلمات أن تصف كم أحبك. أتمنى لكِ سنة مليئة بالسعادة وتحقيق الأحلام، لأنكِ تستحقين كل شيء جميل في هذا العالم. أحبك!" },
+            { id: 2, type: "رسالة اعتذار ومصالحة", title: "I'm So Sorry", body: "أعلم أنني أخطأت وأوجعت قلبك، وهذا آخر شيء أريده في هذه الدنيا. أرجوكِ سامحيني، أنا لا أستطيع العيش بدون ضحكتك. أعدك أنني سأعوضك عن كل شيء." },
+            { id: 3, type: "ذكرى زواج / حب", title: "Happy Anniversary", body: "في مثل هذا اليوم، بدأت أجمل قصة في حياتي. كل يوم يمر بجانبك هو احتفال. شكراً لوجودك معي في الأيام الصعبة والجميلة. سأبقى أحبك للأبد." },
+            { id: 4, type: "للأصدقاء (Best Friend)", title: "To My Best Friend", body: "إلى صديقتي التي تقف معي في كل المواقف. شكراً لأنكِ الكتف الذي أستند عليه. أنتِ لستِ مجرد صديقة، أنتِ أخت حقيقية. كل عام ونحن معاً!" }
+        ];
+
+        function renderTemplates() {
+            const container = document.getElementById('templatesContainer');
+            container.innerHTML = '';
+            textTemplates.forEach(t => {
+                const div = document.createElement('div');
+                div.className = 'text-template';
+                div.innerHTML = `
+                    <span style="background:#e65100; color:white; padding:2px 6px; border-radius:3px; font-size:0.8rem;">${t.type}</span>
+                    <h4>${t.title}</h4>
+                    <p>${t.body}</p>
+                `;
+                div.onclick = () => injectText(t.title, t.body);
+                container.appendChild(div);
+            });
+        }
+
+        function openTextModal() {
+            renderTemplates();
+            document.getElementById('textModal').style.display = 'flex';
+        }
+        function closeTextModal() {
+            document.getElementById('textModal').style.display = 'none';
+        }
+        function injectText(title, body) {
+            document.getElementById('inputMessageTitle').value = title;
+            document.getElementById('inputMessageBody').value = body;
+            closeTextModal();
+            // Scroll back to inputs
+            document.getElementById('inputMessageTitle').scrollIntoView({behavior: 'smooth', block: 'center'});
+            document.getElementById('inputMessageTitle').style.boxShadow = "0 0 10px #4caf50";
+            setTimeout(() => document.getElementById('inputMessageTitle').style.boxShadow = "none", 1000);
+        }
+
+        // --- 3. Form Submission ---
+        document.getElementById('giftForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if(currentAudio) currentAudio.pause(); // Stop music when creating
+
+            const btn = e.target.querySelector('.submit-btn');
+            btn.innerText = "جاري إنشاء السحر...";
+            btn.disabled = true;
+
+            const formData = new FormData(e.target);
+
+            try {
+                // Send to API
+                const response = await fetch('/api/create-gift/love', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('result').style.display = 'block';
+                    document.getElementById('gift-link').href = data.url;
+                    document.getElementById('gift-link').innerText = data.url;
+                    
+                    // Render Heart Shaped QR Code on Canvas
+                    const canvas = document.getElementById('qr-canvas');
+                    const ctx = canvas.getContext('2d');
+                    const img = new Image();
+                    img.crossOrigin = "Anonymous";
+                    img.onload = () => {
+                        ctx.clearRect(0, 0, 800, 800);
+                        
+                        // Fill white background
+                        ctx.fillStyle = "#ffffff";
+                        ctx.fillRect(0, 0, 800, 800);
+
+                        // Draw Heart Mask
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.moveTo(400, 200);
+                        ctx.bezierCurveTo(400, 150, 300, 50, 150, 50);
+                        ctx.bezierCurveTo(0, 50, 0, 250, 0, 250);
+                        ctx.bezierCurveTo(0, 450, 400, 750, 400, 750);
+                        ctx.bezierCurveTo(400, 750, 800, 450, 800, 250);
+                        ctx.bezierCurveTo(800, 250, 800, 50, 650, 50);
+                        ctx.bezierCurveTo(500, 50, 400, 150, 400, 200);
+                        ctx.closePath();
+                        ctx.clip();
+                        
+                        // Draw QR Code inside heart
+                        ctx.drawImage(img, 0, 0, 800, 800);
+                        ctx.restore();
+
+                        // Force redraw the 3 Finder Patterns (Corners) so they are scannable
+                        // Top Left Finder
+                        ctx.drawImage(img, 40, 40, 140, 140, 40, 40, 140, 140);
+                        // Top Right Finder
+                        ctx.drawImage(img, 620, 40, 140, 140, 620, 40, 140, 140);
+                        // Bottom Left Finder
+                        ctx.drawImage(img, 40, 620, 140, 140, 40, 620, 140, 140);
+
+                        // Setup Download Button
+                        const downloadBtn = document.getElementById('download-qr-btn');
+                        downloadBtn.href = canvas.toDataURL("image/png");
+                    };
+                    img.src = data.qrCode;
+
+                    document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    alert(data.error || "حدث خطأ أثناء الإنشاء!");
+                }
+            } catch (err) {
+                alert("فشل الاتصال بالسيرفر: " + err.message);
+            } finally {
+                btn.innerText = "✨ إنشاء الهدية المخصصة";
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

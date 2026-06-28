@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy Birthday!</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500;700&family=Nunito:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- Animate.css -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="gift/css/style.css">
+</head>
+<body>
+
+    <!-- Audio Element -->
+    <audio id="bg-music" loop>
+        <source src="" type="audio/mpeg">
+    </audio>
+
+    <div class="app-container">
+        
+        <!-- Screen 1: Intro Cake -->
+        <section id="screen-intro" class="screen active">
+            <h1 class="title animate__animated animate__fadeInDown" id="text-intro-title"></h1>
+            <div class="cake-wrapper animate__animated animate__pulse animate__infinite">
+                <img src="" alt="Cake" id="img-intro-cake" class="clickable">
+            </div>
+            <div class="cursor-pointer">
+                <img src="https://cdn-icons-png.flaticon.com/512/3067/3067525.png" alt="Cursor" width="30">
+            </div>
+            <p class="subtitle animate__animated animate__fadeInUp" id="text-intro-subtitle"></p>
+        </section>
+
+        <!-- Screen 2: Choose Gift -->
+        <section id="screen-choose" class="screen hidden">
+            <h1 class="title" id="text-choose-title"></h1>
+            <div class="gifts-container">
+                <div class="gift-item" onclick="app.showScreen('screen-message')">
+                    <img src="" id="img-gift-message" alt="Message">
+                    <span>MESSAGE</span>
+                </div>
+                <div class="gift-item" onclick="app.showScreen('screen-flower')">
+                    <img src="" id="img-gift-flower" alt="Flower">
+                    <span>FLOWER</span>
+                </div>
+                <div class="gift-item" onclick="app.showScreen('screen-collage')">
+                    <img src="" id="img-gift-cake" alt="Cake">
+                    <span>CAKE</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 3: Message -->
+        <section id="screen-message" class="screen hidden">
+            <div class="message-layout">
+                <div class="polaroid-strip" id="message-polaroids">
+                    <!-- Polaroids will be injected here -->
+                </div>
+                <div class="letter-paper">
+                    <h2 id="text-message-title"></h2>
+                    <p id="text-message-body"></p>
+                </div>
+                <div class="tag-card">
+                    <img src="" id="img-message-tag" alt="Tag Photo">
+                    <span class="tag-text" id="text-message-tag"></span>
+                </div>
+            </div>
+            <button class="btn-back" onclick="app.showScreen('screen-choose')" id="btn-back-message"></button>
+        </section>
+
+        <!-- Screen 4: Flower -->
+        <section id="screen-flower" class="screen hidden">
+            <h2 class="title flower-title" id="text-flower-title"></h2>
+            <div class="flower-layout">
+                <div class="polaroid-scatter" id="flower-polaroids">
+                    <!-- Polaroids will be injected here -->
+                </div>
+                <div class="main-flower">
+                    <img src="" id="img-flower-main" alt="Flower" class="hover-glow">
+                </div>
+                <div class="side-bouquet">
+                    <img src="https://cdn-icons-png.flaticon.com/512/8243/8243110.png" alt="Kisses" width="100">
+                </div>
+            </div>
+            <button class="btn-back" onclick="app.showScreen('screen-choose')" id="btn-back-flower"></button>
+        </section>
+
+        <!-- Screen 5: Collage -->
+        <section id="screen-collage" class="screen hidden">
+            <div class="collage-layout">
+                <!-- Collage elements will be positioned absolutely -->
+                <img src="" id="img-collage-main" class="collage-center">
+                <img src="https://cdn-icons-png.flaticon.com/512/3248/3248983.png" class="collage-deco cake-deco">
+                <img src="https://cdn-icons-png.flaticon.com/512/1046/1046774.png" class="collage-deco party-hat">
+                <div class="collage-note">
+                    <p>Happy birthday, my love always with you.</p>
+                </div>
+            </div>
+            <button class="btn-back" onclick="app.showScreen('screen-hearts')" id="btn-back-collage"></button>
+        </section>
+
+        <!-- Screen 6: Hearts Gallery -->
+        <section id="screen-hearts" class="screen hidden">
+            <div class="hearts-container" id="hearts-container">
+                <!-- Heart frames will be injected here -->
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script>
+        // --- Security: Prevent Inspect Element and Right Click ---
+        document.addEventListener('contextmenu', event => event.preventDefault());
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F12' || 
+               (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C' || e.key === 'i' || e.key === 'j' || e.key === 'c')) || 
+               (e.ctrlKey && (e.key === 'U' || e.key === 'u'))) {
+                e.preventDefault();
+            }
+        });
+
+        // Fetch configuration from API based on URL parameter ?id=...
+        const urlParams = new URLSearchParams(window.location.search);
+        const giftId = urlParams.get('id');
+        
+        if (!giftId) {
+            alert('رابط غير صالح: لم يتم توفير رقم الهدية');
+        } else {
+            fetch('/api/gift/' + giftId)
+                .then(res => {
+                    if(!res.ok) throw new Error('Gift not found');
+                    return res.json();
+                })
+                .then(data => {
+                    window.Config = data; // Assign to global Config object
+                    
+                    // Now load app.js
+                    const script = document.createElement('script');
+                    script.src = 'gift/js/app.js';
+                    document.body.appendChild(script);
+                })
+                .catch(err => {
+                    alert('عذراً، هذه الهدية غير موجودة أو تم حذفها!');
+                    console.error(err);
+                });
+        }
+    </script>
+</body>
+</html>
