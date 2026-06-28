@@ -17,6 +17,7 @@ const upload = multer({ storage });
 // Serve static files for Love and Grad templates (now internal to the Bot folder for easy deployment)
 app.use('/love', express.static(path.join(__dirname, 'public/love')));
 app.use('/grad', express.static(path.join(__dirname, 'public/grad')));
+app.use('/mini-app', express.static(path.join(__dirname, 'public/mini-app')));
 
 // Helper to upload single file
 const uploadSingleFile = async (file, folder) => {

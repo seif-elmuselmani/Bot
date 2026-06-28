@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>مشغل الموسيقى</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--tg-theme-bg-color, #1c1c1e);
+            color: var(--tg-theme-text-color, #ffffff);
+        }
+        .container {
+            padding: 20px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header h2 {
+            margin: 0;
+            font-size: 22px;
+            color: var(--tg-theme-text-color, #fff);
+        }
+        .header p {
+            font-size: 14px;
+            color: var(--tg-theme-hint-color, #8e8e93);
+            margin-top: 5px;
+        }
+        
+        .song-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .song-card {
+            background-color: var(--tg-theme-secondary-bg-color, #2c2c2e);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: transform 0.2s;
+        }
+        .song-card.active {
+            border: 2px solid var(--tg-theme-button-color, #007aff);
+        }
+        
+        .song-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .play-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--tg-theme-button-color, #007aff);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+        }
+        
+        .song-title {
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .select-btn {
+            background-color: transparent;
+            color: var(--tg-theme-button-color, #007aff);
+            border: 1px solid var(--tg-theme-button-color, #007aff);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .select-btn.selected {
+            background-color: var(--tg-theme-button-color, #007aff);
+            color: var(--tg-theme-button-text-color, #ffffff);
+        }
+
+        #global-audio {
+            display: none;
+        }
+        
+        /* Loading indicator */
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: var(--tg-theme-hint-color, #8e8e93);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h2>🎵 الأغاني الجاهزة</h2>
+            <p>استمع واختر الأغنية المناسبة لخلفية الهدية</p>
+        </div>
+
+        <audio id="global-audio"></audio>
+
+        <div class="song-list" id="song-list">
+            <!-- Songs will be generated here -->
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
+
+        const audioPlayer = document.getElementById('global-audio');
+        let currentPlayingId = null;
+        let selectedSongId = null;
+
+        const songListContainer = document.getElementById('song-list');
+
+        // We have 11 graduation songs
+        const TOTAL_SONGS = 11;
+        const songs = Array.from({ length: TOTAL_SONGS }, (_, i) => ({
+            id: `grad_${i + 1}`,
+            title: `أغنية تخرج ${i + 1}`,
+            url: `/grad/assets/sounds/song_${i + 1}.mp3`
+        }));
+
+        function renderSongs() {
+            songListContainer.innerHTML = '';
+            songs.forEach(song => {
+                const card = document.createElement('div');
+                card.className = `song-card ${selectedSongId === song.id ? 'active' : ''}`;
+                card.id = `card-${song.id}`;
+                
+                const isPlaying = currentPlayingId === song.id;
+
+                card.innerHTML = `
+                    <div class="song-info">
+                        <button class="play-btn" onclick="togglePlay('${song.id}', '${song.url}')">
+                            ${isPlaying ? '⏸' : '▶️'}
+                        </button>
+                        <div class="song-title">${song.title}</div>
+                    </div>
+                    <button class="select-btn ${selectedSongId === song.id ? 'selected' : ''}" onclick="selectSong('${song.id}')">
+                        ${selectedSongId === song.id ? 'تم الاختيار' : 'اختيار'}
+                    </button>
+                `;
+                songListContainer.appendChild(card);
+            });
+        }
+
+        function togglePlay(id, url) {
+            if (currentPlayingId === id) {
+                // Pause if playing
+                audioPlayer.pause();
+                currentPlayingId = null;
+            } else {
+                // Play new song
+                audioPlayer.src = url;
+                audioPlayer.play().catch(e => console.error("Error playing audio", e));
+                currentPlayingId = id;
+            }
+            renderSongs();
+        }
+
+        audioPlayer.addEventListener('ended', () => {
+            currentPlayingId = null;
+            renderSongs();
+        });
+
+        function selectSong(id) {
+            selectedSongId = id;
+            renderSongs();
+            
+            // Show Main Button in Telegram Web App
+            tg.MainButton.text = "تأكيد وإرسال الأغنية";
+            tg.MainButton.show();
+        }
+
+        tg.MainButton.onClick(() => {
+            if (selectedSongId) {
+                // Send data back to bot
+                tg.sendData(JSON.stringify({ song: selectedSongId }));
+            }
+        });
+
+        renderSongs();
+    </script>
+</body>
+</html>

@@ -164,8 +164,15 @@ const gradGiftWizard = new WizardScene(
     if (await checkCancel(ctx, next)) return;
     ctx.wizard.state.giftData.theme = ctx.message?.text?.includes('الأزرق') ? 'blue' : 'pink';
     
-    await ctx.replyWithHTML(`🎵 <b>إضافة أغنية (الموسيقى):</b>\n\nكيف تفضل إضافة الأغنية التي ستعمل في خلفية الهدية؟\n\n1️⃣ <b>أرسل الآن ملف الأغنية (MP3)</b> من جهازك ليتم استخدامه مباشرة.\n\n2️⃣ <b>أو اختر رقماً</b> من الأغاني الجاهزة أدناه:`, {
-        reply_markup: getStaticMusicKeyboard()
+    const webAppUrl = (process.env.BASE_URL || 'https://gitr_i7bcc-980.d.jrnm.app') + '/mini-app/music-player.html';
+    
+    await ctx.replyWithHTML(`🎵 <b>إضافة أغنية (الموسيقى):</b>\n\nكيف تفضل إضافة الأغنية التي ستعمل في خلفية الهدية؟\n\n1️⃣ <b>أرسل الآن ملف الأغنية (MP3)</b> من جهازك ليتم استخدامه مباشرة.\n\n2️⃣ <b>أو افتح المشغل أدناه</b> لاستماع واختيار الأغاني الجاهزة:`, {
+        reply_markup: {
+            keyboard: [
+                [{ text: '🎧 افتح مشغل الموسيقى', web_app: { url: webAppUrl } }],
+                [{ text: '❌ إلغاء العملية' }]
+            ], resize_keyboard: true
+        }
     });
     
     return ctx.wizard.next();
@@ -174,19 +181,22 @@ const gradGiftWizard = new WizardScene(
   async (ctx, next) => {
     if (await checkCancel(ctx, next)) return;
     
-    if (ctx.callbackQuery) {
-        const data = ctx.callbackQuery.data;
-        if (data.startsWith('select_grad_')) {
-            const index = parseInt(data.replace('select_grad_', ''));
-            ctx.wizard.state.giftData.song = `grad_${GRAD_SONGS[index].id}`;
-            await ctx.answerCbQuery('✅ تم اختيار الأغنية الجاهزة!');
-        } else {
+    if (ctx.message?.web_app_data) {
+        try {
+            const data = JSON.parse(ctx.message.web_app_data.data);
+            if (data.song) {
+                ctx.wizard.state.giftData.song = data.song;
+                await ctx.reply('✅ تم اختيار الأغنية بنجاح من المشغل!', { reply_markup: { remove_keyboard: true } });
+            }
+        } catch (e) {
+            console.error('Failed to parse web app data', e);
             return;
         }
     } else if (ctx.message && (ctx.message.audio || ctx.message.voice)) {
         ctx.wizard.state.giftData.customMusicId = (ctx.message.audio || ctx.message.voice).file_id;
+        await ctx.reply('✅ تم استلام مقطعك الصوتي!', { reply_markup: { remove_keyboard: true } });
     } else {
-        await ctx.reply('⚠️ يرجى إرسال مقطع صوتي خاص بك، أو الضغط على زر اختيار أسفل الأغاني الجاهزة.');
+        await ctx.reply('⚠️ يرجى إرسال مقطع صوتي خاص بك، أو الضغط على زر "افتح مشغل الموسيقى".');
         return;
     }
     
