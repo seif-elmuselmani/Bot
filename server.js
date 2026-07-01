@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const multer = require('multer');
 const QRCode = require('qrcode');
 const { uploadStream } = require('./src/config/cloudinary');
@@ -16,6 +17,54 @@ const upload = multer({
     storage,
     limits: { fileSize: 20 * 1024 * 1024 } // 20 MB limit per file
 });
+
+// Helper to inject OG tags into HTML
+const injectOGTags = async (req, res, next, type) => {
+    const id = req.query.id;
+    if (!id) return next();
+    try {
+        const gift = await Gift.findOne({ id }).lean();
+        if (!gift) return next();
+        
+        const filePath = path.join(__dirname, `public/${type}/view.html`);
+        let html = fs.readFileSync(filePath, 'utf8');
+        
+        let title = 'هدية خاصة لك!';
+        let desc = 'اضغط هنا لمشاهدة الهدية الرائعة التي صُممت خصيصاً لك...';
+        let image = 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=1000'; // Default grad image
+        
+        if (type === 'love') {
+            title = gift.introTitle || "Happy Valentine's Day";
+            desc = gift.messageBody || "I love you forever...";
+            image = gift.collageMainPhoto || 'https://images.unsplash.com/photo-1518199268815-f5534747ae33?q=80&w=1000';
+        } else if (type === 'grad') {
+            title = gift.texts?.message1Title || 'هدية تخرج خاصة لك! 🎓';
+            desc = gift.texts?.message1Body || 'هذه الدرجة هي مجرد البداية لرحلتك المذهلة...';
+            image = gift.polaroidPhoto || image;
+        }
+
+        const url = req.protocol + '://' + req.get('host') + req.originalUrl;
+        
+        const ogTags = `
+    <!-- Dynamic WhatsApp / Social Media Link Previews -->
+    <meta property="og:title" content="${title.replace(/"/g, '&quot;')}" />
+    <meta property="og:description" content="${desc.replace(/"/g, '&quot;')}" />
+    <meta property="og:image" content="${image}" />
+    <meta property="og:url" content="${url}" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+        `;
+        
+        html = html.replace('</title>', '</title>\n' + ogTags);
+        res.send(html);
+    } catch (err) {
+        console.error('OG Tag Injection Error:', err);
+        next();
+    }
+};
+
+app.get('/love/view.html', (req, res, next) => injectOGTags(req, res, next, 'love'));
+app.get('/grad/view.html', (req, res, next) => injectOGTags(req, res, next, 'grad'));
 
 // Serve static files for Love and Grad templates (now internal to the Bot folder for easy deployment)
 app.use('/love', express.static(path.join(__dirname, 'public/love')));
