@@ -71,19 +71,6 @@ app.use('/love', express.static(path.join(__dirname, 'public/love')));
 app.use('/grad', express.static(path.join(__dirname, 'public/grad')));
 app.use('/mini-app', express.static(path.join(__dirname, 'public/mini-app')));
 
-// Helper to shorten URLs using TinyURL
-const shortenUrl = async (longUrl) => {
-    try {
-        const response = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`);
-        if (response.ok) {
-            return await response.text();
-        }
-    } catch (err) {
-        console.error('URL Shorten Error:', err);
-    }
-    return longUrl;
-};
-
 // Helper to upload single file
 const uploadSingleFile = async (file, folder) => {
     if (!file) return null;
@@ -261,8 +248,7 @@ app.post('/api/create-gift/love', verifyApiKey, upload.fields([
         });
         
         const baseUrl = req.body.clientBaseUrl || (req.protocol + '://' + req.get('host'));
-        let giftUrl = `${baseUrl}/love/view.html?id=${id}`;
-        giftUrl = await shortenUrl(giftUrl);
+        const giftUrl = `${baseUrl}/love/view.html?id=${id}`;
         const qrCodeDataUrl = await QRCode.toDataURL(giftUrl, { color: { dark: '#ff007f', light: '#ffffff' }});
         
         res.json({ success: true, id, url: giftUrl, qrCode: qrCodeDataUrl });
@@ -323,8 +309,7 @@ app.post('/api/create-gift/grad', verifyApiKey, upload.fields([
         });
         
         const baseUrl = req.body.clientBaseUrl || (req.protocol + '://' + req.get('host'));
-        let giftUrl = `${baseUrl}/grad/view.html?id=${id}`;
-        giftUrl = await shortenUrl(giftUrl);
+        const giftUrl = `${baseUrl}/grad/view.html?id=${id}`;
         const qrCodeDataUrl = await QRCode.toDataURL(giftUrl, { color: { dark: '#ff007f', light: '#ffffff' }});
         
         res.json({ success: true, id, url: giftUrl, qrCode: qrCodeDataUrl });
