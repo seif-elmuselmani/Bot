@@ -166,16 +166,17 @@ const loveGiftWizard = new WizardScene(
         form.append('messageTagPhoto', tagStream, { filename: 'tag.jpg' });
         
         // Arrays
-        for (let i = 0; i < data.messagePhotos.length; i++) {
+        for (let i = 0; i < Math.min(3, data.messagePhotos.length); i++) {
             const mStream = await getTelegramFileStream(ctx, data.messagePhotos[i]);
-            form.append(`messagePhotos`, mStream, { filename: `msg${i}.jpg` });
-            
-            const hStream = await getTelegramFileStream(ctx, data.heartPhotos[i]);
-            form.append(`heartPhotos`, hStream, { filename: `heart${i}.jpg` });
+            form.append(`messagePhoto${i + 1}`, mStream, { filename: `msg${i}.jpg` });
         }
-        for (let i = 0; i < 2; i++) {
+        for (let i = 0; i < Math.min(3, data.heartPhotos.length); i++) {
+            const hStream = await getTelegramFileStream(ctx, data.heartPhotos[i]);
+            form.append(`heartPhoto${i + 1}`, hStream, { filename: `heart${i}.jpg` });
+        }
+        for (let i = 0; i < Math.min(2, data.flowerPhotos.length); i++) {
             const fStream = await getTelegramFileStream(ctx, data.flowerPhotos[i]);
-            form.append(`flowerPhotos`, fStream, { filename: `flower${i}.jpg` });
+            form.append(`flowerPhoto${i + 1}`, fStream, { filename: `flower${i}.jpg` });
         }
         
         if (data.musicId) {
@@ -216,10 +217,45 @@ const loveGiftWizard = new WizardScene(
         const base64Data = result.qrCode.replace(/^data:image\/png;base64,/, "");
         const qrBuffer = Buffer.from(base64Data, 'base64');
         await ctx.replyWithPhoto({ source: qrBuffer });
+
+        // إشعار لجروب الإدارة
+        const adminGroupId = process.env.ADMIN_GROUP_ID;
+        if (adminGroupId) {
+            try {
+                await ctx.telegram.sendMessage(adminGroupId,
+                    `🎁 <b>هدية حب جديدة تم إنشاؤها!</b>\n\n` +
+                    `• <b>المستخدم:</b> ${escapeHTML(ctx.from.first_name || 'غير محدد')} (<code>${ctx.from.id}</code>)\n` +
+                    `• <b>الرابط:</b> <a href="${result.url}">${result.url}</a>\n` +
+                    `• <b>التكلفة:</b> تم خصم 10 نقاط.`,
+                    { parse_mode: 'HTML', disable_web_page_preview: true }
+                );
+            } catch (notifyErr) {
+                console.error('Failed to notify admin group about love gift:', notifyErr.message);
+            }
+        }
     } catch (err) {
         console.error('API Error:', err.message);
-        await ctx.telegram.deleteMessage(ctx.chat.id, processingMsg.message_id);
-        await ctx.reply('❌ حدث خطأ أثناء إنشاء الهدية. حاول مرة أخرى لاحقاً.');
+        await ctx.telegram.deleteMessage(ctx.chat.id, processingMsg.message_id).catch(() => {});
+        
+        // استرداد الرصيد
+        await User.findOneAndUpdate({ telegramId: ctx.from.id.toString() }, { $inc: { balance: 10 } });
+        
+        // إرسال رسالة للمستخدم مع رقم الدعم
+        await ctx.reply('❌ حدث خطأ تقني أثناء إنشاء الهدية.\n\nتم استرداد رصيدك (10 نقاط) بالكامل 💳.\n\n📞 للتواصل مع الدعم الفني وحل المشكلة فوراً، تواصل معي على الرقم: 01277136620');
+        
+        // إشعار لجروب الإدارة بوجود مشكلة
+        const adminGroupId = process.env.ADMIN_GROUP_ID;
+        if (adminGroupId) {
+            try {
+                await ctx.telegram.sendMessage(adminGroupId,
+                    `⚠️ <b>تنبيه: خطأ تقني (Love Gift)!</b>\n\n` +
+                    `• <b>المستخدم:</b> ${escapeHTML(ctx.from.first_name || 'غير محدد')} (<code>${ctx.from.id}</code>)\n` +
+                    `• <b>تفاصيل الخطأ:</b> <code>${err.message}</code>\n\n` +
+                    `<i>تم استرداد 10 نقاط للعميل. يرجى تفقد حالة سيرفر الـ API.</i>`,
+                    { parse_mode: 'HTML' }
+                );
+            } catch (notifyErr) {}
+        }
     }
 
     return ctx.scene.leave();

@@ -42,6 +42,11 @@
             <!-- Hidden field for correct Base URL -->
             <input type="hidden" name="clientBaseUrl" id="clientBaseUrl">
             
+            <div class="form-group" style="background: #f8d7da; padding: 15px; border-radius: 8px; border-left: 4px solid #dc3545;">
+                <label style="color: #721c24;">🔑 كلمة مرور المسؤول (API Secret)</label>
+                <input type="password" id="adminPassword" placeholder="أدخل كلمة المرور الخاصة بالسيرفر" required>
+            </div>
+            
             <h3 class="section-title">🎨 0. إعدادات الثيم والخدمات المميزة</h3>
             <div class="form-group">
                 <label>اختر لون ثيم الهدية</label>
@@ -184,8 +189,12 @@
 
             try {
                 // Send to API
+                const apiKey = document.getElementById('adminPassword').value;
                 const response = await fetch('/api/create-gift/grad', {
-                    method: 'POST', body: new FormData(e.target) });
+                    method: 'POST', 
+                    headers: { 'x-api-key': apiKey },
+                    body: new FormData(e.target) 
+                });
                 const data = await response.json();
                 
                 if (data.success) {
