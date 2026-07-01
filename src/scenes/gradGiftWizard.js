@@ -9,9 +9,9 @@ const escapeHTML = (str) => {
 };
 
 const checkCancel = async (ctx, next) => {
-  const text = ctx.message?.text?.trim();
-  if (text === '❌ إلغاء العملية' || text === '/cancel') {
-    await ctx.reply('❌ تم إلغاء صناعة الهدية.', {
+  const text = ctx.message?.text?.trim() || '';
+  if (text === '❌ إلغاء العملية' || text.toLowerCase() === 'cancel' || text.startsWith('/')) {
+    await ctx.reply('❌ تم إلغاء العملية.', {
         reply_markup: {
             keyboard: [
               [{ text: '🎁 إنشاء هدية جديدة' }, { text: '💳 شحن المحفظة' }],
@@ -20,11 +20,13 @@ const checkCancel = async (ctx, next) => {
             resize_keyboard: true
         }
     });
+    // Let Telegraf handle the command if it started with '/'
     await ctx.scene.leave();
     return true;
   }
   return false;
 };
+
 
 async function getTelegramFileStream(ctx, fileId) {
     const fileUrl = await ctx.telegram.getFileLink(fileId);
@@ -93,7 +95,7 @@ const gradGiftWizard = new WizardScene(
     if (!ctx.message?.photo) return ctx.reply('⚠️ يرجى إرسال صورة صالحة.');
     const photo = ctx.message.photo;
     ctx.wizard.state.giftData.mainPhotoId = photo[photo.length - 1].file_id;
-    await ctx.replyWithHTML('✅ <b>صورة غلاف ممتازة!</b>\n\nالآن، أرسل <b>7 صور للذكريات</b> (ستظهر في شريط الذكريات الجانبي واللوحة).\nأرسلهم واحدة تلو الأخرى، ثم اضغط <b>"التالي"</b> عند الانتهاء.', {
+    await ctx.replyWithHTML('✅ <b>صورة غلاف ممتازة!</b>\n\nالآن، أرسل <b>4 صور للذكريات</b> (ستظهر في شريط الذكريات الجانبي).\nأرسلهم واحدة تلو الأخرى، ثم اضغط <b>"التالي"</b> عند الانتهاء.', {
         reply_markup: { keyboard: [[{ text: '➡️ التالي' }], [{ text: '❌ إلغاء العملية' }]], resize_keyboard: true }
     });
     return ctx.wizard.next();
@@ -228,15 +230,13 @@ const gradGiftWizard = new WizardScene(
         const mainPhotoStream = await getTelegramFileStream(ctx, data.mainPhotoId);
         form.append('polaroidPhoto', mainPhotoStream, { filename: 'main.jpg' });
         
-        for (let i = 0; i < Math.min(4, data.filmPhotos.length); i++) {
+        for (let i = 0; i < data.filmPhotos.length; i++) {
             const stream = await getTelegramFileStream(ctx, data.filmPhotos[i]);
-            form.append(`filmPhoto${i + 1}`, stream, { filename: `film${i}.jpg` });
-        }
-        
-        const remainingPhotos = data.filmPhotos.length > 4 ? data.filmPhotos.slice(4) : data.filmPhotos;
-        for (let i = 0; i < Math.min(3, remainingPhotos.length); i++) {
-            const pbStream = await getTelegramFileStream(ctx, remainingPhotos[i]);
-            form.append(`pbPhoto${i + 1}`, pbStream, { filename: `pb${i}.jpg` });
+            form.append(`filmStripPhotos`, stream, { filename: `film${i}.jpg` });
+            if (i < 3) {
+                const pbStream = await getTelegramFileStream(ctx, data.filmPhotos[i]);
+                form.append(`photoboothPhotos`, pbStream, { filename: `pb${i}.jpg` });
+            }
         }
         
         if (data.voiceNoteId) {
@@ -271,45 +271,11 @@ const gradGiftWizard = new WizardScene(
         const base64Data = result.qrCode.replace(/^data:image\/png;base64,/, "");
         const qrBuffer = Buffer.from(base64Data, 'base64');
         await ctx.replyWithPhoto({ source: qrBuffer });
-
-        // إشعار لجروب الإدارة
-        const adminGroupId = process.env.ADMIN_GROUP_ID;
-        if (adminGroupId) {
-            try {
-                await ctx.telegram.sendMessage(adminGroupId,
-                    `🎓 <b>هدية تخرج جديدة تم إنشاؤها!</b>\n\n` +
-                    `• <b>المستخدم:</b> ${escapeHTML(ctx.from.first_name || 'غير محدد')} (<code>${ctx.from.id}</code>)\n` +
-                    `• <b>الرابط:</b> <a href="${result.url}">${result.url}</a>\n` +
-                    `• <b>التكلفة:</b> تم خصم 10 نقاط.`,
-                    { parse_mode: 'HTML', disable_web_page_preview: true }
-                );
-            } catch (notifyErr) {
-                console.error('Failed to notify admin group about grad gift:', notifyErr.message);
-            }
-        }
     } catch (err) {
         console.error('API Error:', err.message);
-        await ctx.telegram.deleteMessage(ctx.chat.id, processingMsg.message_id).catch(() => {});
-        
-        // استرداد الرصيد
+        await ctx.telegram.deleteMessage(ctx.chat.id, processingMsg.message_id);
+        await ctx.reply('⚠️ حدث خطأ أثناء إنشاء الهدية. تم استرداد رصيدك.');
         await User.findOneAndUpdate({ telegramId: ctx.from.id.toString() }, { $inc: { balance: 10 } });
-        
-        // إرسال رسالة للمستخدم مع رقم الدعم
-        await ctx.reply('❌ حدث خطأ تقني أثناء إنشاء الهدية.\n\nتم استرداد رصيدك (10 نقاط) بالكامل 💳.\n\n📞 للتواصل مع الدعم الفني وحل المشكلة فوراً، تواصل معي على الرقم: 01277136620');
-        
-        // إشعار لجروب الإدارة بوجود مشكلة
-        const adminGroupId = process.env.ADMIN_GROUP_ID;
-        if (adminGroupId) {
-            try {
-                await ctx.telegram.sendMessage(adminGroupId,
-                    `⚠️ <b>تنبيه: خطأ تقني (Grad Gift)!</b>\n\n` +
-                    `• <b>المستخدم:</b> ${escapeHTML(ctx.from.first_name || 'غير محدد')} (<code>${ctx.from.id}</code>)\n` +
-                    `• <b>تفاصيل الخطأ:</b> <code>${err.message}</code>\n\n` +
-                    `<i>تم استرداد 10 نقاط للعميل. يرجى تفقد حالة سيرفر الـ API.</i>`,
-                    { parse_mode: 'HTML' }
-                );
-            } catch (notifyErr) {}
-        }
     }
     return ctx.scene.leave();
   }

@@ -11,6 +11,25 @@ const escapeHTML = (str) => {
               .replace(/'/g, '&#039;');
 };
 
+const checkCancel = async (ctx, next) => {
+  const text = ctx.message?.text?.trim() || '';
+  if (text === '❌ إلغاء العملية' || text.toLowerCase() === 'cancel' || text.startsWith('/')) {
+    await ctx.reply('❌ تم إلغاء العملية.', {
+        reply_markup: {
+            keyboard: [
+              [{ text: '🎁 إنشاء هدية جديدة' }, { text: '💳 شحن المحفظة' }],
+              [{ text: '👤 حسابي الشخصي' }, { text: '❓ المساعدة والأوامر' }]
+            ],
+            resize_keyboard: true
+        }
+    });
+    // Let Telegraf handle the command if it started with '/'
+    await ctx.scene.leave();
+    return true;
+  }
+  return false;
+};
+
 async function getTelegramFileStream(ctx, fileId) {
     const fileUrl = await ctx.telegram.getFileLink(fileId);
     const response = await axios({ url: fileUrl.href, method: 'GET', responseType: 'stream' });
